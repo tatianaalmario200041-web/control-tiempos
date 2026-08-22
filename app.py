@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Personalizado para estilo limpio
+# Estilos CSS
 st.markdown("""
     <style>
     .main-header {
@@ -71,15 +71,7 @@ for c in cronometros:
     if f"inicio_{c}" not in st.session_state:
         st.session_state[f"inicio_{c}"] = None
 
-# Variables de Formulario
-if "orden_input" not in st.session_state:
-    st.session_state["orden_input"] = ""
-if "motivo_paro_input" not in st.session_state:
-    st.session_state["motivo_paro_input"] = ""
-
-def limpiar_formulario():
-    st.session_state["orden_input"] = ""
-    st.session_state["motivo_paro_input"] = ""
+def resetear_cronometros():
     for c in cronometros:
         st.session_state[f"tiempo_{c}"] = 0.0
         st.session_state[f"corriendo_{c}"] = False
@@ -90,19 +82,19 @@ with st.expander("ESTACIÓN 1: Parametrización de la Orden y Material", expande
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        orden = st.text_input("Orden / Pedido", key="orden_input")
-        turno = st.selectbox("Turno Operativo", ["Día", "Tarde", "Noche"], key="turno_select")
-        maquina = st.selectbox("Máquina / Centro de Costo", ["Punzonadora", "Dobladora", "Cizalla", "Corte Láser", "Ensamble", "Pintura"], key="maquina_select")
+        orden = st.text_input("Orden / Pedido")
+        turno = st.selectbox("Turno Operativo", ["Día", "Tarde", "Noche"])
+        maquina = st.selectbox("Máquina / Centro de Costo", ["Punzonadora", "Dobladora", "Cizalla", "Corte Láser", "Ensamble", "Pintura"])
     
     with col2:
-        fecha = st.date_input("Fecha", datetime.date.today(), key="fecha_input")
-        proyecto = st.selectbox("Proyecto / Nombre General", ["Mesa de Juntas", "Gabinete Industrial", "Estructura Modular", "Panel Perforado", "Mueble Metálico", "Otro / Específico"], key="proyecto_select")
-        tipo_trabajo = st.selectbox("Modalidad de Trabajo", ["Nesting Completo", "Despiece Individual", "Lote Muestra", "Reproceso"], key="tipo_trabajo_select")
+        fecha = st.date_input("Fecha", datetime.date.today())
+        proyecto = st.selectbox("Proyecto / Nombre General", ["Mesa de Juntas", "Gabinete Industrial", "Estructura Modular", "Panel Perforado", "Mueble Metálico", "Otro / Específico"])
+        tipo_trabajo = st.selectbox("Modalidad de Trabajo", ["Nesting Completo", "Despiece Individual", "Lote Muestra", "Reproceso"])
 
     with col3:
-        material = st.selectbox("Material Base", ["Lámina CR (Cold Rolled)", "Lámina HR (Hot Rolled)", "Acero Inoxidable", "Aluminio", "Galvanizado"], key="material_select")
-        calibre = st.selectbox("Calibre / Espesor", ["Calibre 18", "Calibre 20", "Calibre 22", "Calibre 1/8\"", "Calibre 3/16\"", "Calibre 1/4\""], key="calibre_select")
-        cant_laminas = st.number_input("Cantidad de Láminas", min_value=1, step=1, value=1, key="cant_laminas_input")
+        material = st.selectbox("Material Base", ["Lámina CR (Cold Rolled)", "Lámina HR (Hot Rolled)", "Acero Inoxidable", "Aluminio", "Galvanizado"])
+        calibre = st.selectbox("Calibre / Espesor", ["Calibre 18", "Calibre 20", "Calibre 22", "Calibre 1/8\"", "Calibre 3/16\"", "Calibre 1/4\""])
+        cant_laminas = st.number_input("Cantidad de Láminas", min_value=1, step=1, value=1)
 
 # ESTACIÓN 2: CRONÓMETROS
 with st.expander("ESTACIÓN 2: Cronometraje Operativo de Proceso y Tiempos Muertos", expanded=True):
@@ -157,9 +149,9 @@ with st.expander("ESTACIÓN 2: Cronometraje Operativo de Proceso y Tiempos Muert
         st.markdown('<div class="section-title">Improductivos / Paros de Máquina</div>', unsafe_allow_html=True)
         t_paros = render_cronometro("Paros de Máquina", "Paros", es_paros=True)
         t_espera = render_cronometro("Tiempo Muerto / Espera Operario", "Espera Operario", es_paros=True)
-        motivo_paro = st.text_input("Motivo Principal de Paro", placeholder="Ej: Ajuste de herramental", key="motivo_paro_input")
+        motivo_paro = st.text_input("Motivo Principal de Paro", placeholder="Ej: Ajuste de herramental")
 
-# Refresco dinámico
+# Refresco dinámico de cronómetros activos
 alguno_activo = any(st.session_state[f"corriendo_{c}"] for c in cronometros)
 if alguno_activo:
     time.sleep(1)
@@ -213,10 +205,8 @@ if st.button("GUARDAR REGISTRO COMPLETO", use_container_width=True, type="primar
             df_final = df_nuevo
             
         df_final.to_excel(archivo_excel, index=False)
-        st.success(f"Confirmación: Registro para la Orden {orden} almacenado correctamente.")
-        limpiar_formulario()
-        time.sleep(1)
-        st.rerun()
+        resetear_cronometros()
+        st.success(f"Confirmación: Registro para la Orden {orden} almacenado correctamente en {archivo_excel}.")
 
 # MOSTRAR REGISTROS
 st.markdown("---")
