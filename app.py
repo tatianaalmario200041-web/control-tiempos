@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import time
 import os
+import io
 
 st.set_page_config(
     page_title="Control de Producción y Métodos",
@@ -206,14 +207,30 @@ if st.button("GUARDAR REGISTRO COMPLETO", use_container_width=True, type="primar
             
         df_final.to_excel(archivo_excel, index=False)
         resetear_cronometros()
-        st.success(f"Confirmación: Registro para la Orden {orden} almacenado correctamente en {archivo_excel}.")
+        st.success(f"Confirmación: Registro para la Orden {orden} almacenado correctamente.")
 
-# MOSTRAR REGISTROS
+# MOSTRAR Y DESCARGAR REGISTROS
 st.markdown("---")
-st.markdown('<div class="section-title">Registros Guardados</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Registros Guardados y Exportación</div>', unsafe_allow_html=True)
 archivo_excel = "Registro_Produccion.xlsx"
+
 if os.path.exists(archivo_excel):
     df_ver = pd.read_excel(archivo_excel)
     st.dataframe(df_ver, use_container_width=True)
+    
+    # Preparar el archivo Excel en memoria para descarga directa
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df_ver.to_excel(writer, index=False, sheet_name='Produccion')
+    buffer.seek(0)
+    
+    # Botón de Descargar Excel
+    st.download_button(
+        label="📥 Descargar Excel con todos los registros",
+        data=buffer,
+        file_name="Registro_Produccion.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
+    )
 else:
     st.info("Aún no hay registros almacenados.")
