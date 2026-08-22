@@ -381,17 +381,17 @@ if os.path.exists(archivo_excel):
     
     # MÓDULO DE DESCARGA PROTEGIDO CON CONTRASEÑA
     st.markdown("---")
-    st.markdown("🔒 **Exportación Protegida de Datos (Ingeniería de Costos)**")
+    st.markdown("🔒 **DEPARTAMENTO DE COSTOS - Base de datos protegida por Tatiana Almario**")
     
     col_pass, col_btn = st.columns([1, 2])
     
     with col_pass:
-        clave_ingresada = st.text_input("Ingresa la clave para autorizar la descarga:", type="password", placeholder="Escribe el PIN aquí...")
+        clave_ingresada = st.text_input("Ingresa el PIN de autorización para descargar:", type="password", placeholder="Ingresa PIN aquí...")
     
     with col_btn:
         st.write("") # Espaciador visual para alinear con el input
         st.write("")
-        if clave_ingresada.strip().upper() == "TATIANA":
+        if clave_ingresada.strip() == "190520":
             buffer = io.BytesIO()
             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
                 df_ver_limpio.to_excel(writer, index=False, sheet_name='Tiempos')
@@ -406,9 +406,9 @@ if os.path.exists(archivo_excel):
                 type="primary"
             )
         elif clave_ingresada != "":
-            st.error("❌ Clave incorrecta. Acceso denegado a la descarga de la matriz.")
+            st.error("❌ PIN incorrecto. Acceso denegado.")
         else:
-            st.warning("🔑 Ingresa la contraseña autorizada para habilitar el botón de descarga.")
+            st.warning("🔑 Ingresa la contraseña autorizada para habilitar la descarga.")
 
 else:
     st.info("Aún no hay registros consolidados.")
