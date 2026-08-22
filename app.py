@@ -1,73 +1,167 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import time
 import os
 
-# Configuración inicial de la página
-st.set_page_config(
-    page_title="Control de Tiempos",
-    page_icon="⏱️",
-    layout="wide"
-)
+st.set_page_config(page_title="Control Operativo de Proceso", layout="wide")
 
-# Nombre del archivo Excel local
-ARCHIVO_EXCEL = "Registro_Produccion.xlsx"
+# Inicialización de estados de los cronómetros
+if "t_setup_start" not in st.session_state:
+    st.session_state.t_setup_start = None
+if "t_setup_elapsed" not in st.session_state:
+    st.session_state.t_setup_elapsed = 0
+if "t_setup_running" not in st.session_state:
+    st.session_state.t_setup_running = False
 
-# Inicializar sesión si no existen los datos
-if "registros" not in st.session_state:
-    st.session_state["registros"] = []
+if "t_prod_start" not in st.session_state:
+    st.session_state.t_prod_start = None
+if "t_prod_elapsed" not in st.session_state:
+    st.session_state.t_prod_elapsed = 0
+if "t_prod_running" not in st.session_state:
+    st.session_state.t_prod_running = False
 
-st.title("⏱️ Control de Tiempos de Producción")
+if "t_paro_start" not in st.session_state:
+    st.session_state.t_paro_start = None
+if "t_paro_elapsed" not in st.session_state:
+    st.session_state.t_paro_elapsed = 0
+if "t_paro_running" not in st.session_state:
+    st.session_state.t_paro_running = False
 
-# Formulario principal
-with st.form(key="form_tiempos", clear_on_submit=True):
-    col1, col2 = st.columns(2)
-    
+# Funciones de control de tiempo
+def get_time_str(seconds):
+    m, s = divmod(int(seconds), 60)
+    h, m = divmod(m, 60)
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
+def update_times():
+    now = time.time()
+    if st.session_state.t_setup_running:
+        st.session_state.t_setup_elapsed += now - st.session_state.t_setup_start
+        st.session_state.t_setup_start = now
+    if st.session_state.t_prod_running:
+        st.session_state.t_prod_elapsed += now - st.session_state.t_prod_start
+        st.session_state.t_prod_start = now
+    if st.session_state.t_paro_running:
+        st.session_state.t_paro_elapsed += now - st.session_state.t_paro_start
+        st.session_state.t_paro_start = now
+
+update_times()
+
+st.title("ESTACIÓN 2: Cronometraje Operativo de Proceso y Tiempos Muertos")
+
+# Formulario de parámetros
+with st.container():
+    col1, col2, col3 = st.columns(3)
     with col1:
-        orden = st.text_input("Número de Orden de Producción", key="orden_input")
-        operario = st.text_input("Nombre del Operario", key="operario_input")
-        proceso = st.selectbox("Proceso / Estación", ["Setup / Preparación", "Tiempo Productivo", "Paro / Improductivo"])
-        
+        orden = st.text_input("Orden de Producción", key="orden_input")
+        turno = st.selectbox("Turno", ["Día", "Noche", "Mixto"])
     with col2:
-        unidades = st.number_input("Cantidad de Unidades Producción", min_value=0, step=1, key="unidades_input")
-        fecha = st.date_input("Fecha", datetime.now())
-        observaciones = st.text_area("Observaciones", key="obs_input")
+        maquina = st.selectbox("Máquina", ["Punzonadora", "Cizalla", "Dobladora", "Láser", "Prensa"])
+        proyecto = st.text_input("Proyecto / Nombre de Pieza")
+    with col3:
+        material = st.selectbox("Material", ["Lámina CR", "Lámina HR", "Acero Inoxidable", "Aluminio", "Galvanizado"])
+        calibre = st.selectbox("Calibre / Espesor", ["Calibre 18", "Calibre 16", "Calibre 14", "Calibre 12", "1/8 inch", "1/4 inch"])
 
-    submit_button = st.form_submit_button(label="Guardar Registro")
+st.markdown("---")
+st.subheader("Tiempos Productivos / Operativos")
 
-if submit_button:
-    if not orden or not operario:
-        st.error("Por favor completa los campos obligatorios: Orden y Operario.")
+col_c1, col_c2 = st.columns(2)
+
+with col_c1:
+    st.markdown("#### TIEMPO SETUP / PREPARACIÓN")
+    st.markdown(f"### `{get_time_str(st.session_state.t_setup_elapsed)}`")
+    c1, c2, c3 = st.columns(3)
+    if c1.button("Iniciar Setup"):
+        st.session_state.t_setup_start = time.time()
+        st.session_state.t_setup_running = True
+        st.rerun()
+    if c2.button("Pausar Setup"):
+        st.session_state.t_setup_running = False
+        st.rerun()
+    if c3.button("Reset Setup"):
+        st.session_state.t_setup_running = False
+        st.session_state.t_setup_elapsed = 0
+        st.rerun()
+
+with col_c2:
+    st.markdown("#### TIEMPO PRODUCTIVO / OPERACIÓN")
+    st.markdown(f"### `{get_time_str(st.session_state.t_prod_elapsed)}`")
+    p1, p2, p3 = st.columns(3)
+    if p1.button("Iniciar Producción"):
+        st.session_state.t_prod_start = time.time()
+        st.session_state.t_prod_running = True
+        st.rerun()
+    if p2.button("Pausar Producción"):
+        st.session_state.t_prod_running = False
+        st.rerun()
+    if p3.button("Reset Producción"):
+        st.session_state.t_prod_running = False
+        st.session_state.t_prod_elapsed = 0
+        st.rerun()
+
+st.markdown("---")
+st.subheader("Improductivos / Paros de Máquina")
+
+col_p1, col_p2 = st.columns(2)
+
+with col_p1:
+    st.markdown("#### TIEMPO PARO DE MÁQUINA")
+    st.markdown(f"### `{get_time_str(st.session_state.t_paro_elapsed)}`")
+    m1, m2, m3 = st.columns(3)
+    if m1.button("Iniciar Paro"):
+        st.session_state.t_paro_start = time.time()
+        st.session_state.t_paro_running = True
+        st.rerun()
+    if m2.button("Pausar Paro"):
+        st.session_state.t_paro_running = False
+        st.rerun()
+    if m3.button("Reset Paro"):
+        st.session_state.t_paro_running = False
+        st.session_state.t_paro_elapsed = 0
+        st.rerun()
+
+with col_p2:
+    causa_paro = st.selectbox("Causa del Paro / Novedad", ["Ninguno", "Mantenimiento / Falla Mecánica", "Falta de Material", "Pausa Pausas Activas / Almuerzo", "Ajuste de Plano / Ingeniería", "Espera de Inspección Calidad"])
+    observaciones = st.text_area("Observaciones Adicionales")
+
+st.markdown("---")
+
+if st.button("Guardar Registro Completo", type="primary"):
+    if not orden:
+        st.error("Por favor ingrese el número de Orden de Producción.")
     else:
-        # Estructura del nuevo registro
-        nuevo_registro = {
-            "Fecha": fecha.strftime("%Y-%m-%d"),
+        archivo = "Registro_Produccion.xlsx"
+        nuevo_dato = {
+            "Fecha": datetime.now().strftime("%Y-%m-%d"),
             "Orden": orden,
-            "Operario": operario,
-            "Proceso": proceso,
-            "Unidades": unidades,
+            "Turno": turno,
+            "Máquina": maquina,
+            "Proyecto": proyecto,
+            "Material": material,
+            "Calibre": calibre,
+            "Tiempo_Setup": get_time_str(st.session_state.t_setup_elapsed),
+            "Tiempo_Productivo": get_time_str(st.session_state.t_prod_elapsed),
+            "Tiempo_Paro": get_time_str(st.session_state.t_paro_elapsed),
+            "Causa_Paro": causa_paro,
             "Observaciones": observaciones,
-            "Hora_Registro": datetime.now().strftime("%H:%M:%S")
+            "Hora": datetime.now().strftime("%H:%M:%S")
         }
-
-        # Guardar en dataframe y exportar a Excel
-        df_nuevo = pd.DataFrame([nuevo_registro])
-
-        if os.path.exists(ARCHIVO_EXCEL):
-            df_existente = pd.read_excel(ARCHIVO_EXCEL)
+        
+        df_nuevo = pd.DataFrame([nuevo_dato])
+        if os.path.exists(archivo):
+            df_existente = pd.read_excel(archivo)
             df_final = pd.concat([df_existente, df_nuevo], ignore_index=True)
         else:
             df_final = df_nuevo
+            
+        df_final.to_excel(archivo, index=False)
+        st.success(f"Confirmación: Registro para la Orden {orden} almacenado correctamente en {archivo}.")
 
-        df_final.to_excel(ARCHIVO_EXCEL, index=False)
-
-        st.success(f"Confirmación: Registro para la Orden {orden} almacenado correctamente en {ARCHIVO_EXCEL}.")
-        st.rerun()
-
-# Visualización de datos registrados
-st.subheader("📋 Registros Guardados")
-if os.path.exists(ARCHIVO_EXCEL):
-    df_ver = pd.read_excel(ARCHIVO_EXCEL)
+# Tabla de historial
+st.markdown("---")
+st.subheader("Registros Guardados")
+archivo = "Registro_Produccion.xlsx"
+if os.path.exists(archivo):
+    df_ver = pd.read_excel(archivo)
     st.dataframe(df_ver, use_container_width=True)
-else:
-    st.info("Aún no hay registros almacenados.")
