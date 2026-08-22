@@ -80,22 +80,26 @@ def resetear_cronometros():
 
 # ESTACIÓN 1: PARAMETRIZACIÓN
 with st.expander("ESTACIÓN 1: Parametrización de la Orden y Material", expanded=True):
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        orden = st.text_input("Orden / Pedido")
-        turno = st.selectbox("Turno Operativo", ["Día", "Tarde", "Noche"])
-        maquina = st.selectbox("Máquina / Centro de Costo", ["Punzonadora", "Dobladora", "Cizalla", "Corte Láser", "Ensamble", "Pintura"])
+        orden = st.text_input("ORDEN / PEDIDO")
+        fecha = st.date_input("FECHA", datetime.date.today())
+        turno = st.selectbox("TURNO", ["Día", "Tarde", "Noche"])
+        maquina = st.selectbox("MAQUINA", ["Punzonadora", "Dobladora", "Cizalla", "Corte Láser", "Ensamble", "Pintura"])
     
     with col2:
-        fecha = st.date_input("Fecha", datetime.date.today())
-        proyecto = st.selectbox("Proyecto / Nombre General", ["Mesa de Juntas", "Gabinete Industrial", "Estructura Modular", "Panel Perforado", "Mueble Metálico", "Otro / Específico"])
-        tipo_trabajo = st.selectbox("Modalidad de Trabajo", ["Nesting Completo", "Despiece Individual", "Lote Muestra", "Reproceso"])
+        nombre_general = st.selectbox("NOMBRE GENERAL/producto", ["Mesa de Juntas", "Gabinete Industrial", "Estructura Modular", "Panel Perforado", "Mueble Metálico", "Otro / Específico"])
+        detalle_pieza = st.selectbox("DETALLE PIEZA/LOTE", ["Nesting Completo", "Despiece Individual", "Lote Muestra", "Reproceso"])
+        material = st.selectbox("MATERIAL", ["Lámina CR (Cold Rolled)", "Lámina HR (Hot Rolled)", "Acero Inoxidable", "Aluminio", "Galvanizado"])
 
     with col3:
-        material = st.selectbox("Material Base", ["Lámina CR (Cold Rolled)", "Lámina HR (Hot Rolled)", "Acero Inoxidable", "Aluminio", "Galvanizado"])
-        calibre = st.selectbox("Calibre / Espesor", ["Calibre 18", "Calibre 20", "Calibre 22", "Calibre 1/8\"", "Calibre 3/16\"", "Calibre 1/4\""])
-        cant_laminas = st.number_input("Cantidad de Láminas", min_value=1, step=1, value=1)
+        calibre = st.selectbox("CALIBRE", ["Calibre 18", "Calibre 20", "Calibre 22", "Calibre 1/8\"", "Calibre 3/16\"", "Calibre 1/4\""])
+        cant_general = st.number_input("CANTIDAD GENERAL", min_value=1, step=1, value=1)
+        cant_piezas_ok = st.number_input("CANTIDAD PIEZAS OK", min_value=0, step=1, value=1)
+
+    with col4:
+        tiempo_estandar = st.number_input("TIEMPO CICLO ESTÁNDAR (MIN)", min_value=0.0, step=0.1, value=0.0)
 
 # ESTACIÓN 2: CRONÓMETROS
 with st.expander("ESTACIÓN 2: Cronometraje Operativo de Proceso y Tiempos Muertos", expanded=True):
@@ -148,9 +152,9 @@ with st.expander("ESTACIÓN 2: Cronometraje Operativo de Proceso y Tiempos Muert
 
     with col_b:
         st.markdown('<div class="section-title">Improductivos / Paros de Máquina</div>', unsafe_allow_html=True)
-        t_paros = render_cronometro("Paros de Máquina", "Paros", es_paros=True)
         t_espera = render_cronometro("Tiempo Muerto / Espera Operario", "Espera Operario", es_paros=True)
-        motivo_paro = st.text_input("Motivo Principal de Paro", placeholder="Ej: Ajuste de herramental")
+        t_paros = render_cronometro("Paros de Máquina", "Paros", es_paros=True)
+        motivo_paro = st.text_input("MOTIVO PRINCIPAL PARO", placeholder="Ej: Ajuste de herramental")
 
 # Refresco dinámico de cronómetros activos
 alguno_activo = any(st.session_state[f"corriendo_{c}"] for c in cronometros)
@@ -174,28 +178,32 @@ k3.metric("Eficiencia (OEE)", f"{eficiencia}%")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# GUARDADO DE DATOS
+# GUARDADO DE DATOS CON ESTRUCTURA EXACTA A TU EXCEL
 if st.button("GUARDAR REGISTRO COMPLETO", use_container_width=True, type="primary"):
     if not orden or not maquina:
-        st.error("Error: Los campos 'Orden' y 'Máquina' son obligatorios.")
+        st.error("Error: Los campos 'ORDEN / PEDIDO' y 'MAQUINA' son obligatorios.")
     else:
         archivo_excel = "Registro_Produccion.xlsx"
-        material_completo = f"{material} - {calibre}"
-        proyecto_modalidad = f"{proyecto} ({tipo_trabajo} - {cant_laminas} láminas)"
         
+        # Diccionario respetando exacto las columnas de tu imagen
         nuevo_registro = {
-            "Orden": str(orden),
-            "Fecha": fecha.strftime("%Y-%m-%d"),
-            "Turno": str(turno),
-            "Máquina": str(maquina),
-            "Proyecto": str(proyecto_modalidad),
-            "Material": str(material_completo),
-            "Setup (min)": float(t_setup),
-            "Ciclo Real (min)": float(t_ciclo),
-            "Descargue (min)": float(t_descargue),
-            "Paros (min)": float(t_paros),
-            "Espera Operario (min)": float(t_espera),
-            "Motivo Paro": str(motivo_paro)
+            "ORDEN / PEDIDO": str(orden),
+            "FECHA": fecha.strftime("%Y-%m-%d"),
+            "TURNO": str(turno),
+            "MAQUINA": str(maquina),
+            "NOMBRE GENERAL/producto": str(nombre_general),
+            "DETALLE PIEZA/LOTE": str(detalle_pieza),
+            "MATERIAL": str(material),
+            "CALIBRE": str(calibre),
+            "CANTIDAD GENERAL": int(cant_general),
+            "CANTIDAD PIEZAS OK": int(cant_piezas_ok),
+            "TIEMPO SETUP (MIN)": float(t_setup),
+            "TIEMPO CICLO ESTÁNDAR (MIN)": float(tiempo_estandar),
+            "TIEMPO CICLO REAL (MIN)": float(t_ciclo),
+            "TIEMPO OPERARIO EN ESPERA (MIN)": float(t_espera),
+            "TIEMPO MUERTO / PAROS (MIN)": float(t_paros),
+            "TIEMPO DESCARGUE (POSTCORTE) (MIN)": float(t_descargue),
+            "MOTIVO PRINCIPAL PARO": str(motivo_paro)
         }
         
         df_nuevo = pd.DataFrame([nuevo_registro])
@@ -218,7 +226,7 @@ if os.path.exists(archivo_excel):
     df_ver = pd.read_excel(archivo_excel)
     st.dataframe(df_ver, use_container_width=True)
     
-    # Preparar el archivo Excel en memoria para descarga directa
+    # Preparar el archivo Excel en memoria
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
         df_ver.to_excel(writer, index=False, sheet_name='Produccion')
@@ -226,7 +234,7 @@ if os.path.exists(archivo_excel):
     
     # Botón de Descargar Excel
     st.download_button(
-        label="📥 Descargar Excel con todos los registros",
+        label="📥 Descargar Excel para Copiar y Pegar en Formato Maestro",
         data=buffer,
         file_name="Registro_Produccion.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
