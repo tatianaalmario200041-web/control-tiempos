@@ -7,62 +7,143 @@ import io
 
 st.set_page_config(
     page_title="Control de Producción y Métodos",
+    page_icon="⏱️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Estilos CSS
+# Estilos CSS Profesionales
 st.markdown("""
     <style>
-    .main-header {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+    
+    * {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .main-title {
         color: #0f172a;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 800;
+        letter-spacing: -0.5px;
         margin-bottom: 2px;
     }
-    .sub-header {
-        color: #475569;
-        font-size: 14px;
+    
+    .sub-title {
+        color: #64748b;
+        font-size: 13px;
         font-weight: 500;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
     }
-    .section-title {
-        color: #1e293b;
-        font-size: 16px;
+    
+    .card-header {
+        background-color: #f8fafc;
+        border-left: 4px solid #0284c7;
+        padding: 8px 12px;
+        font-size: 14px;
         font-weight: 700;
-        padding-bottom: 4px;
-        border-bottom: 2px solid #e2e8f0;
-        margin-bottom: 14px;
+        color: #1e293b;
+        border-radius: 0 6px 6px 0;
+        margin-bottom: 15px;
     }
-    .timer-card-prod {
-        background-color: #ffffff;
-        border-left: 5px solid #2563eb;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 10px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    
+    /* Cronómetros */
+    .timer-container-prod {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #2563eb;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
     }
-    .timer-card-stop {
-        background-color: #ffffff;
-        border-left: 5px solid #dc2626;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 10px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    
+    .timer-container-stop {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #dc2626;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
     }
-    .stButton>button {
-        border-radius: 6px;
+    
+    .timer-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .timer-digits {
+        font-size: 26px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 4px 0 8px 0;
+    }
+    
+    .timer-unit {
+        font-size: 12px;
         font-weight: 600;
-        width: 100%;
-        height: 38px;
+        color: #94a3b8;
+    }
+
+    /* Estilos Botones Custom */
+    div.stButton > button {
+        border-radius: 6px !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        height: 36px !important;
+        transition: all 0.2s ease !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-header">CONTROL DE PRODUCCIÓN Y TOMA DE TIEMPOS</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Acceso Centralizado Nube • Multi-Sede & Multi-Dispositivo</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">CONTROL DE PRODUCCIÓN Y TOMA DE TIEMPOS</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Planta Operativa • Captura de Tiempos & Métodos en Vivo</div>', unsafe_allow_html=True)
 
-# Cronómetros en Session State
+# Listas oficiales tomadas del módulo Parámetros y Catálogos
+MAQUINAS_LIST = [
+    "Punzonadora Trumpf Trumatic 2000R",
+    "Cortadora Láser CNC (MT 36) - F 3015",
+    "Plegadora Durma CNC",
+    "Dobladora Dener",
+    "Soldadura MIG",
+    "Soldadura PUNTO",
+    "Horno Pintura",
+    "Soldadura LASER"
+]
+
+MATERIALES_LIST = [
+    "CR (Cold Rolled)",
+    "HR (Hot Rolled)",
+    "Acero Inoxidable",
+    "Aluminio"
+]
+
+CALIBRES_LIST = [
+    "0.9 mm", "1.2 mm", "1.5 mm", "2.0 mm", "2.5 mm", "3.0 mm",
+    "C14", "C16", "C18", "C20", "C22"
+]
+
+MOTIVOS_PARO_LIST = [
+    "Ninguno / Operación Normal",
+    "Falta de material / Materia prima",
+    "Cambio de herramienta / Setup",
+    "Mantenimiento autónomo / Limpieza",
+    "Falta de programa NC / Ingeniería",
+    "Ajuste de holgura / Calidad",
+    "Falta de energía / Aire comprimido",
+    "Cambio de boquilla / Consumibles",
+    "Alerta / Paro de emergencia de máquina",
+    "Descanso / Almuerzo operador",
+    "Operario en máquina sin producción (Ociosidad / Espera)",
+    "Otro / Imprevisto",
+    "Espera de material / Sin orden trab"
+]
+
+# Inicialización Session State
 cronometros = ["Setup", "Ciclo Real", "Descargue", "Paros", "Espera Operario"]
 for c in cronometros:
     if f"tiempo_{c}" not in st.session_state:
@@ -78,31 +159,31 @@ def resetear_cronometros():
         st.session_state[f"corriendo_{c}"] = False
         st.session_state[f"inicio_{c}"] = None
 
-# ESTACIÓN 1: PARAMETRIZACIÓN
-with st.expander("ESTACIÓN 1: Parametrización de la Orden y Material", expanded=True):
-    col1, col2, col3, col4 = st.columns(4)
+# PARÁMETROS DE LA ORDEN
+with st.expander("DATOS GENERALES DE LA ORDEN", expanded=True):
+    c1, c2, c3, c4 = st.columns(4)
     
-    with col1:
+    with c1:
         orden = st.text_input("ORDEN / PEDIDO")
         fecha = st.date_input("FECHA", datetime.date.today())
         turno = st.selectbox("TURNO", ["Día", "Tarde", "Noche"])
-        maquina = st.selectbox("MAQUINA", ["Punzonadora", "Dobladora", "Cizalla", "Corte Láser", "Ensamble", "Pintura"])
+        maquina = st.selectbox("MAQUINA", MAQUINAS_LIST)
     
-    with col2:
-        nombre_general = st.selectbox("NOMBRE GENERAL/producto", ["Mesa de Juntas", "Gabinete Industrial", "Estructura Modular", "Panel Perforado", "Mueble Metálico", "Otro / Específico"])
-        detalle_pieza = st.selectbox("DETALLE PIEZA/LOTE", ["Nesting Completo", "Despiece Individual", "Lote Muestra", "Reproceso"])
-        material = st.selectbox("MATERIAL", ["Lámina CR (Cold Rolled)", "Lámina HR (Hot Rolled)", "Acero Inoxidable", "Aluminio", "Galvanizado"])
+    with c2:
+        nombre_general = st.text_input("NOMBRE GENERAL/producto", placeholder="Ej: BARRA ALTA TIPO COWORKING...")
+        detalle_pieza = st.text_input("DETALLE PIEZA/LOTE", placeholder="Ej: LOTE 10 UNIDADES")
+        material = st.selectbox("MATERIAL", MATERIALES_LIST)
 
-    with col3:
-        calibre = st.selectbox("CALIBRE", ["Calibre 18", "Calibre 20", "Calibre 22", "Calibre 1/8\"", "Calibre 3/16\"", "Calibre 1/4\""])
+    with c3:
+        calibre = st.selectbox("CALIBRE", CALIBRES_LIST)
         cant_general = st.number_input("CANTIDAD GENERAL", min_value=1, step=1, value=1)
         cant_piezas_ok = st.number_input("CANTIDAD PIEZAS OK", min_value=0, step=1, value=1)
 
-    with col4:
-        tiempo_estandar = st.number_input("TIEMPO CICLO ESTÁNDAR (MIN)", min_value=0.0, step=0.1, value=0.0)
+    with c4:
+        tiempo_estandar = st.number_input("TIEMPO CICLO ESTÁNDAR (MIN)", min_value=0.0, step=0.1, value=0.0, help="Opcional: Si lo asigna Programación/Ingeniería")
 
-# ESTACIÓN 2: CRONÓMETROS
-with st.expander("ESTACIÓN 2: Cronometraje Operativo de Proceso y Tiempos Muertos", expanded=True):
+# CRONOMETRAJE EN PISO
+with st.expander("CRONOMETRAJE EN PISO DE PLANTA", expanded=True):
     
     def render_cronometro(nombre, clave, es_paros=False):
         tiempo_actual = st.session_state[f"tiempo_{clave}"]
@@ -112,51 +193,51 @@ with st.expander("ESTACIÓN 2: Cronometraje Operativo de Proceso y Tiempos Muert
         minutos = int(tiempo_actual // 60)
         segundos = int(tiempo_actual % 60)
         
-        card_class = "timer-card-stop" if es_paros else "timer-card-prod"
+        card_class = "timer-container-stop" if es_paros else "timer-container-prod"
         
         st.markdown(f'''
             <div class="{card_class}">
-                <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Tiempo {nombre}</span>
-                <div style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 2px;">{minutos:02d}:{segundos:02d} <span style="font-size: 12px; font-weight: 500;">min</span></div>
+                <div class="timer-label">{nombre}</div>
+                <div class="timer-digits">{minutos:02d}:{segundos:02d} <span class="timer-unit">min</span></div>
             </div>
         ''', unsafe_allow_html=True)
         
-        b1, b2, b3 = st.columns(3)
+        b1, b2, b3 = st.columns([1, 1, 1])
         with b1:
-            if st.button("Iniciar", key=f"start_{clave}"):
+            if st.button("▶ Iniciar", key=f"start_{clave}", type="primary" if not st.session_state[f"corriendo_{clave}"] else "secondary"):
                 if not st.session_state[f"corriendo_{clave}"]:
                     st.session_state[f"inicio_{clave}"] = time.time()
                     st.session_state[f"corriendo_{clave}"] = True
                     st.rerun()
         with b2:
-            if st.button("Pausar", key=f"pause_{clave}"):
+            if st.button("⏸ Pausar", key=f"pause_{clave}"):
                 if st.session_state[f"corriendo_{clave}"]:
                     st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
                     st.session_state[f"corriendo_{clave}"] = False
                     st.rerun()
         with b3:
-            if st.button("Reiniciar", key=f"reset_{clave}"):
+            if st.button("🔄 Reiniciar", key=f"reset_{clave}"):
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
                 st.rerun()
                 
         return round(tiempo_actual / 60.0, 2)
 
-    col_a, col_b = st.columns(2)
+    col_left, col_right = st.columns(2)
     
-    with col_a:
-        st.markdown('<div class="section-title">Tiempos Productivos Operativos</div>', unsafe_allow_html=True)
-        t_setup = render_cronometro("Setup / Separación", "Setup", es_paros=False)
-        t_ciclo = render_cronometro("Ciclo Real Machining", "Ciclo Real", es_paros=False)
-        t_descargue = render_cronometro("Descargue y Verificación", "Descargue", es_paros=False)
+    with col_left:
+        st.markdown('<div class="card-header">TIEMPOS PRODUCTIVOS</div>', unsafe_allow_html=True)
+        t_setup = render_cronometro("SETUP (MIN)", "Setup", es_paros=False)
+        t_ciclo = render_cronometro("CICLO REAL (MIN)", "Ciclo Real", es_paros=False)
+        t_descargue = render_cronometro("DESCARGUE (POSTCORTE) (MIN)", "Descargue", es_paros=False)
 
-    with col_b:
-        st.markdown('<div class="section-title">Improductivos / Paros de Máquina</div>', unsafe_allow_html=True)
-        t_espera = render_cronometro("Tiempo Muerto / Espera Operario", "Espera Operario", es_paros=True)
-        t_paros = render_cronometro("Paros de Máquina", "Paros", es_paros=True)
-        motivo_paro = st.text_input("MOTIVO PRINCIPAL PARO", placeholder="Ej: Ajuste de herramental")
+    with col_right:
+        st.markdown('<div class="card-header">TIEMPOS IMPRODUCTIVOS / PAROS</div>', unsafe_allow_html=True)
+        t_espera = render_cronometro("OPERARIO EN ESPERA (MIN)", "Espera Operario", es_paros=True)
+        t_paros = render_cronometro("MUERTO / PAROS (MIN)", "Paros", es_paros=True)
+        motivo_paro = st.selectbox("MOTIVO PRINCIPAL PARO", MOTIVOS_PARO_LIST)
 
-# Refresco dinámico de cronómetros activos
+# Refresco dinámico
 alguno_activo = any(st.session_state[f"corriendo_{c}"] for c in cronometros)
 if alguno_activo:
     time.sleep(1)
@@ -164,28 +245,13 @@ if alguno_activo:
 
 st.markdown("---")
 
-# RESUMEN METRICO
-st.markdown('<div class="section-title">Consolidado Métrico del Lote</div>', unsafe_allow_html=True)
-k1, k2, k3 = st.columns(3)
-
-tiempo_total = round(t_setup + t_ciclo + t_descargue + t_paros + t_espera, 2)
-tiempo_productivo = round(t_setup + t_ciclo + t_descargue, 2)
-eficiencia = round((tiempo_productivo / tiempo_total * 100), 1) if tiempo_total > 0 else 100.0
-
-k1.metric("Tiempo Total (min)", f"{tiempo_total}")
-k2.metric("Tiempo Neto Productivo (min)", f"{tiempo_productivo}")
-k3.metric("Eficiencia (OEE)", f"{eficiencia}%")
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# GUARDADO DE DATOS CON ESTRUCTURA EXACTA A TU EXCEL
-if st.button("GUARDAR REGISTRO COMPLETO", use_container_width=True, type="primary"):
+# GUARDADO Y MATRIZ DE DATOS
+if st.button("💾 GUARDAR REGISTRO Y PREPARAR EXCEL", use_container_width=True, type="primary"):
     if not orden or not maquina:
-        st.error("Error: Los campos 'ORDEN / PEDIDO' y 'MAQUINA' son obligatorios.")
+        st.error("Error: Los campos 'ORDEN / PEDIDO' y 'MAQUINA' son requeridos.")
     else:
         archivo_excel = "Registro_Produccion.xlsx"
         
-        # Diccionario respetando exacto las columnas de tu imagen
         nuevo_registro = {
             "ORDEN / PEDIDO": str(orden),
             "FECHA": fecha.strftime("%Y-%m-%d"),
@@ -215,30 +281,27 @@ if st.button("GUARDAR REGISTRO COMPLETO", use_container_width=True, type="primar
             
         df_final.to_excel(archivo_excel, index=False)
         resetear_cronometros()
-        st.success(f"Confirmación: Registro para la Orden {orden} almacenado correctamente.")
+        st.success(f"¡Registro exitoso! Orden {orden} consolidada en la matriz.")
 
-# MOSTRAR Y DESCARGAR REGISTROS
-st.markdown("---")
-st.markdown('<div class="section-title">Registros Guardados y Exportación</div>', unsafe_allow_html=True)
+# VISTA PREVIA Y EXPORTACIÓN
+st.markdown('<div class="card-header">REGISTROS CRONOMETRADOS (HISTORIAL EXPORTABLE)</div>', unsafe_allow_html=True)
 archivo_excel = "Registro_Produccion.xlsx"
 
 if os.path.exists(archivo_excel):
     df_ver = pd.read_excel(archivo_excel)
     st.dataframe(df_ver, use_container_width=True)
     
-    # Preparar el archivo Excel en memoria
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        df_ver.to_excel(writer, index=False, sheet_name='Produccion')
+        df_ver.to_excel(writer, index=False, sheet_name='Registro de Producción')
     buffer.seek(0)
     
-    # Botón de Descargar Excel
     st.download_button(
-        label="📥 Descargar Excel para Copiar y Pegar en Formato Maestro",
+        label="📥 DESCARGAR EXCEL PARA PEGAR EN ARCHIVO MAESTRO",
         data=buffer,
         file_name="Registro_Produccion.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         use_container_width=True
     )
 else:
-    st.info("Aún no hay registros almacenados.")
+    st.info("Aún no hay registros tomados en este turno.")
