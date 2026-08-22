@@ -145,7 +145,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Listas
+# Listas Predeterminadas
 MAQUINAS_LIST = [
     "Punzonadora Trumpf Trumatic 2000R",
     "Cortadora Láser CNC (MT 36) - F 3015",
@@ -230,7 +230,7 @@ with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
         cant_piezas_ok = st.number_input("Piezas Procesadas OK", min_value=0, step=1, value=1)
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
-# ÁREA DE CRONOMETRAJE
+# ÁREA DE CRONOMETRAJE EN VIVO
 with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
     def render_cronometro(nombre, clave):
@@ -298,7 +298,7 @@ if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
 
 st.markdown("---")
 
-# GUARDADO DE REGISTRO
+# GUARDADO DE REGISTRO Y CÁLCULO DE EFICIENCIA (%)
 if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=True, type="primary"):
     if not orden or not maquina:
         st.error("⚠️ Ingrese la 'Orden / OP' y seleccione la 'Máquina' para guardar.")
@@ -337,12 +337,36 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         else:
             df_final = df_nuevo
             
-        # Depurar filas completamente vacías o corruptas
+        # Depurar filas completamente vacías
         df_final = df_final.dropna(subset=["Orden"])
         df_final.to_excel(archivo_excel, index=False)
         
-        resetear_cronometros()
         st.success(f"✅ ¡Registro de la Orden {orden} guardado y matriz depurada correctamente!")
+
+        # --- ANÁLISIS DE EFICIENCIA EN VIVO DE ESTE REGISTRO ---
+        tiempo_total = float(t_setup) + float(t_ciclo) + float(t_descargue) + float(t_espera) + float(t_paros)
+        tiempo_productivo = float(t_ciclo)
+        tiempo_improductivo = float(t_espera) + float(t_paros)
+
+        if tiempo_total > 0:
+            eficiencia = (tiempo_productivo / tiempo_total) * 100
+            desperdicio = (tiempo_improductivo / tiempo_total) * 100
+            
+            st.markdown('<div class="section-header">📈 ANÁLISIS DE EFICIENCIA DEL REGISTRO CAPTURADO</div>', unsafe_allow_html=True)
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Tiempo Total Operativo", f"{tiempo_total:.1f} min")
+            m2.metric("Tiempo Productivo", f"{tiempo_productivo:.1f} min")
+            m3.metric("Eficiencia (Valor Agregado)", f"{eficiencia:.1f}%")
+            m4.metric("Desperdicio (Paros/Espera)", f"{desperdicio:.1f}%")
+            
+            if eficiencia >= 75:
+                st.info("🟢 **Excelente desempeño:** Operación con alta productividad.")
+            elif 50 <= eficiencia < 75:
+                st.warning("🟠 **Desempeño medio:** Revisar tiempos de alistamiento (setup) y esperas.")
+            else:
+                st.error("🔴 **Alerta de eficiencia:** Alto porcentaje de tiempo improductivo detectado.")
+
+        resetear_cronometros()
 
 # MOSTRAR MATRIZ Y FILTRAR FILAS VACÍAS
 st.markdown('<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS DE PLANTA</div>', unsafe_allow_html=True)
@@ -351,7 +375,7 @@ archivo_excel = "Registro_Produccion.xlsx"
 if os.path.exists(archivo_excel):
     df_ver = pd.read_excel(archivo_excel)
     
-    # Limpieza visual en pantalla: Ocultar registros corruptos
+    # Limpieza visual en pantalla: Ocultar registros corruptos o vacíos
     df_ver_limpio = df_ver.dropna(subset=["Orden"]).reset_index(drop=True)
     
     st.dataframe(df_ver_limpio, use_container_width=True)
