@@ -375,23 +375,41 @@ archivo_excel = "Registro_Produccion.xlsx"
 if os.path.exists(archivo_excel):
     df_ver = pd.read_excel(archivo_excel)
     
-    # Limpieza visual en pantalla: Ocultar registros corruptos o vacíos
+    # Limpieza visual en pantalla
     df_ver_limpio = df_ver.dropna(subset=["Orden"]).reset_index(drop=True)
-    
     st.dataframe(df_ver_limpio, use_container_width=True)
     
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        df_ver_limpio.to_excel(writer, index=False, sheet_name='Tiempos')
-    buffer.seek(0)
+    # MÓDULO DE DESCARGA PROTEGIDO CON CONTRASEÑA
+    st.markdown("---")
+    st.markdown("🔒 **Exportación Protegida de Datos (Ingeniería de Costos)**")
     
-    st.download_button(
-        label="📥 DESCARGAR MATRIZ LIMPIA EN EXCEL (.XLSX)",
-        data=buffer,
-        file_name="Registro_Produccion.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
+    col_pass, col_btn = st.columns([1, 2])
+    
+    with col_pass:
+        clave_ingresada = st.text_input("Ingresa la clave para autorizar la descarga:", type="password", placeholder="Escribe el PIN aquí...")
+    
+    with col_btn:
+        st.write("") # Espaciador visual para alinear con el input
+        st.write("")
+        if clave_ingresada.strip().upper() == "TATIANA":
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                df_ver_limpio.to_excel(writer, index=False, sheet_name='Tiempos')
+            buffer.seek(0)
+            
+            st.download_button(
+                label="📥 DESCARGAR MATRIZ COMPLETA EN EXCEL (.XLSX)",
+                data=buffer,
+                file_name="Registro_Produccion.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                type="primary"
+            )
+        elif clave_ingresada != "":
+            st.error("❌ Clave incorrecta. Acceso denegado a la descarga de la matriz.")
+        else:
+            st.warning("🔑 Ingresa la contraseña autorizada para habilitar el botón de descarga.")
+
 else:
     st.info("Aún no hay registros consolidados.")
 
