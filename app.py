@@ -4,6 +4,7 @@ import datetime
 import time
 import os
 import io
+import json
 
 # Configuración de Página
 st.set_page_config(
@@ -151,24 +152,43 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 ARCHIVO_EXCEL = "Registro_Produccion.xlsx"
+ARCHIVO_OPERARIOS = "Lista_Operarios.json"
 
 # Inicializar Hora de Inicio de Captura del Registro
 if "hora_inicio_registro" not in st.session_state or st.session_state["hora_inicio_registro"] is None:
     st.session_state["hora_inicio_registro"] = datetime.datetime.now().strftime("%H:%M:%S")
 
-# Función para extraer dinámicamente la lista de operarios guardados en Excel
-def obtener_lista_operarios():
-    nombres_base = []
+# Cargar y guardar lista maestra de operarios
+def cargar_operarios():
+    operarios = []
+    if os.path.exists(ARCHIVO_OPERARIOS):
+        try:
+            with open(ARCHIVO_OPERARIOS, "r", encoding="utf-8") as f:
+                operarios = json.load(f)
+        except:
+            operarios = []
+    
     if os.path.exists(ARCHIVO_EXCEL):
         try:
             df = pd.read_excel(ARCHIVO_EXCEL)
             if "Operario" in df.columns:
-                nombres_base = df["Operario"].dropna().astype(str).str.strip().unique().tolist()
+                nombres_excel = df["Operario"].dropna().astype(str).str.strip().unique().tolist()
+                for item in nombres_excel:
+                    if item and item not in operarios:
+                        operarios.append(item)
         except:
             pass
-    return sorted([n for n in nombres_base if n != ""])
+            
+    return sorted(list(set(operarios)))
 
-# Listas Predeterminadas
+def guardar_operarios(lista_operarios):
+    with open(ARCHIVO_OPERARIOS, "w", encoding="utf-8") as f:
+        json.dump(sorted(list(set(lista_operarios))), f, ensure_ascii=False, indent=4)
+
+if "lista_operarios" not in st.session_state:
+    st.session_state["lista_operarios"] = cargar_operarios()
+
+# Listas Predeterminados
 MAQUINAS_LIST = [
     "Punzonadora Trumpf Trumatic 2000R",
     "Cortadora Láser CNC (MT 36) - F 3015",
@@ -226,7 +246,6 @@ def resetear_cronometros():
         st.session_state[f"tiempo_{c}"] = 0.0
         st.session_state[f"corriendo_{c}"] = False
         st.session_state[f"inicio_{c}"] = None
-    # Reiniciar la hora de inicio para la siguiente toma
     st.session_state["hora_inicio_registro"] = datetime.datetime.now().strftime("%H:%M:%S")
 
 # PARÁMETROS ORGANIZADOS EN 3 COLUMNAS LIMPIAS
@@ -234,16 +253,28 @@ with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        # LISTA DESPLEGABLE DINÁMICA DE OPERARIOS
-        lista_ops = obtener_lista_operarios()
-        opciones_operario = ["➕ Registrar Nuevo Operario / Tomador..."] + lista_ops
+        opciones_operario = ["Seleccionar...", "➕ Registrar Nuevo Operario..."] + st.session_state["lista_operarios"]
         
-        operario_sel = st.selectbox("Operario / Tomador de Tiempos", opciones_operario)
+        c_sel, c_del = st.columns([5, 1])
+        with c_sel:
+            operario_sel = st.selectbox("Operario / Tomador de Tiempos", opciones_operario)
         
-        if operario_sel == "➕ Registrar Nuevo Operario / Tomador...":
+        with c_del:
+            st.write("") 
+            st.write("")
+            if operario_sel not in ["Seleccionar...", "➕ Registrar Nuevo Operario..."] and operario_sel:
+                if st.button("🗑️", help=f"Eliminar '{operario_sel}' de la lista guardada"):
+                    st.session_state["lista_operarios"].remove(operario_sel)
+                    guardar_operarios(st.session_state["lista_operarios"])
+                    st.toast(f"🗑️ Operario '{operario_sel}' eliminado de la lista.")
+                    st.rerun()
+
+        if operario_sel == "➕ Registrar Nuevo Operario...":
             operario = st.text_input("Nombre y Apellido Completo", placeholder="Ej: Juan Pérez").strip()
-        else:
+        elif operario_sel != "Seleccionar...":
             operario = operario_sel
+        else:
+            operario = ""
 
         orden = st.text_input("Orden / OP", placeholder="Ej: 2345678")
         fecha = st.date_input("Fecha de Toma", datetime.date.today())
@@ -341,7 +372,10 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
     elif not operario:
         st.error("⚠️ Ingrese o seleccione el nombre del 'Operario / Tomador de Tiempos'.")
     else:
-        # Registro de horas de inicio y fin de toma
+        if operario not in st.session_state["lista_operarios"]:
+            st.session_state["lista_operarios"].append(operario)
+            guardar_operarios(st.session_state["lista_operarios"])
+
         hora_inicio = st.session_state.get("hora_inicio_registro", datetime.datetime.now().strftime("%H:%M:%S"))
         hora_fin = datetime.datetime.now().strftime("%H:%M:%S")
 
@@ -379,7 +413,6 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         else:
             df_final = df_nuevo
             
-        # Depurar filas completamente vacías
         df_final = df_final.dropna(subset=["Orden"])
         df_final.to_excel(ARCHIVO_EXCEL, index=False)
         
@@ -416,11 +449,7 @@ st.markdown('<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS DE P
 
 if os.path.exists(ARCHIVO_EXCEL):
     df_ver = pd.read_excel(ARCHIVO_EXCEL)
-    
-    # Limpieza visual en pantalla
     df_ver_limpio = df_ver.dropna(subset=["Orden"]).reset_index(drop=True)
-    
-    # Renderizado en modo lectura sin barra de herramientas de descarga
     st.dataframe(df_ver_limpio, use_container_width=True, hide_index=True)
     
     # MÓDULO DE DESCARGA PROTEGIDO CON CONTRASEÑA
@@ -434,7 +463,7 @@ if os.path.exists(ARCHIVO_EXCEL):
         borrar_tras_descarga = st.checkbox("🧹 Limpiar / Borrar historial en la app tras exportar", value=True)
 
     with col_btn:
-        st.write("") # Espaciador visual
+        st.write("") 
         st.write("")
         if clave_ingresada.strip() == "190520":
             buffer = io.BytesIO()
@@ -442,7 +471,6 @@ if os.path.exists(ARCHIVO_EXCEL):
                 df_ver_limpio.to_excel(writer, index=False, sheet_name='Tiempos')
             buffer.seek(0)
             
-            # Botón de Descarga
             descargado = st.download_button(
                 label="📥 DESCARGAR MATRIZ COMPLETA Y VACIAR HISTORIAL",
                 data=buffer,
@@ -452,7 +480,6 @@ if os.path.exists(ARCHIVO_EXCEL):
                 type="primary"
             )
             
-            # Si hace clic en descargar y eligió borrar el historial
             if descargado and borrar_tras_descarga:
                 if os.path.exists(ARCHIVO_EXCEL):
                     os.remove(ARCHIVO_EXCEL)
