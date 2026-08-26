@@ -152,6 +152,10 @@ st.markdown("""
 
 ARCHIVO_EXCEL = "Registro_Produccion.xlsx"
 
+# Inicializar Hora de Inicio de Captura del Registro
+if "hora_inicio_registro" not in st.session_state or st.session_state["hora_inicio_registro"] is None:
+    st.session_state["hora_inicio_registro"] = datetime.datetime.now().strftime("%H:%M:%S")
+
 # Función para extraer dinámicamente la lista de operarios guardados en Excel
 def obtener_lista_operarios():
     nombres_base = []
@@ -222,6 +226,8 @@ def resetear_cronometros():
         st.session_state[f"tiempo_{c}"] = 0.0
         st.session_state[f"corriendo_{c}"] = False
         st.session_state[f"inicio_{c}"] = None
+    # Reiniciar la hora de inicio para la siguiente toma
+    st.session_state["hora_inicio_registro"] = datetime.datetime.now().strftime("%H:%M:%S")
 
 # PARÁMETROS ORGANIZADOS EN 3 COLUMNAS LIMPIAS
 with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
@@ -335,11 +341,16 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
     elif not operario:
         st.error("⚠️ Ingrese o seleccione el nombre del 'Operario / Tomador de Tiempos'.")
     else:
-        # Mapeo de columnas estandarizadas
+        # Registro de horas de inicio y fin de toma
+        hora_inicio = st.session_state.get("hora_inicio_registro", datetime.datetime.now().strftime("%H:%M:%S"))
+        hora_fin = datetime.datetime.now().strftime("%H:%M:%S")
+
         nuevo_registro = {
             "Operario": str(operario),
             "Orden": str(orden),
             "Fecha": fecha.strftime("%Y-%m-%d"),
+            "Hora Inicio": str(hora_inicio),
+            "Hora Fin": str(hora_fin),
             "Turno": str(turno),
             "Máquina": str(maquina),
             "Proyecto": str(nombre_general),
@@ -372,7 +383,7 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         df_final = df_final.dropna(subset=["Orden"])
         df_final.to_excel(ARCHIVO_EXCEL, index=False)
         
-        st.success(f"✅ ¡Registro de la Orden {orden} guardado y matriz depurada correctamente!")
+        st.success(f"✅ ¡Registro de la Orden {orden} guardado (Inicio: {hora_inicio} - Fin: {hora_fin})!")
 
         # --- ANÁLISIS DE EFICIENCIA EN VIVO DE ESTE REGISTRO ---
         tiempo_total = float(t_setup) + float(t_ciclo) + float(t_descargue) + float(t_espera) + float(t_paros)
@@ -420,9 +431,10 @@ if os.path.exists(ARCHIVO_EXCEL):
     
     with col_pass:
         clave_ingresada = st.text_input("Ingresa el PIN de autorización para descargar:", type="password", placeholder="Ingresa PIN aquí...")
-    
+        borrar_tras_descarga = st.checkbox("🧹 Limpiar / Borrar historial en la app tras exportar", value=True)
+
     with col_btn:
-        st.write("") # Espaciador visual para alinear con el input
+        st.write("") # Espaciador visual
         st.write("")
         if clave_ingresada.strip() == "190520":
             buffer = io.BytesIO()
@@ -430,14 +442,24 @@ if os.path.exists(ARCHIVO_EXCEL):
                 df_ver_limpio.to_excel(writer, index=False, sheet_name='Tiempos')
             buffer.seek(0)
             
-            st.download_button(
-                label="📥 DESCARGAR MATRIZ COMPLETA EN EXCEL (.XLSX)",
+            # Botón de Descarga
+            descargado = st.download_button(
+                label="📥 DESCARGAR MATRIZ COMPLETA Y VACIAR HISTORIAL",
                 data=buffer,
-                file_name="Registro_Produccion.xlsx",
+                file_name=f"Registro_Produccion_{datetime.date.today()}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
                 type="primary"
             )
+            
+            # Si hace clic en descargar y eligió borrar el historial
+            if descargado and borrar_tras_descarga:
+                if os.path.exists(ARCHIVO_EXCEL):
+                    os.remove(ARCHIVO_EXCEL)
+                st.success("🧹 Historial descargado y borrado correctamente de la aplicación.")
+                time.sleep(1)
+                st.rerun()
+
         elif clave_ingresada != "":
             st.error("❌ PIN incorrecto. Acceso denegado.")
         else:
