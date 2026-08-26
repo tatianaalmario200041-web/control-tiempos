@@ -13,13 +13,18 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS Nivel Ingeniería
+# Estilos CSS Nivel Ingeniería + Bloqueo de Descarga en el Historial
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    /* Ocultar botón de descarga nativo de st.dataframe */
+    [data-testid="stElementToolbar"] {
+        display: none !important;
     }
     
     /* Header principal compacto */
@@ -368,7 +373,7 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
 
         resetear_cronometros()
 
-# MOSTRAR MATRIZ Y FILTRAR FILAS VACÍAS
+# MOSTRAR MATRIZ Y FILTRAR FILAS VACÍAS (PROTEGIDA VISUALMENTE)
 st.markdown('<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS DE PLANTA</div>', unsafe_allow_html=True)
 archivo_excel = "Registro_Produccion.xlsx"
 
@@ -377,7 +382,9 @@ if os.path.exists(archivo_excel):
     
     # Limpieza visual en pantalla
     df_ver_limpio = df_ver.dropna(subset=["Orden"]).reset_index(drop=True)
-    st.dataframe(df_ver_limpio, use_container_width=True)
+    
+    # Renderizado en modo lectura sin barra de herramientas de descarga
+    st.dataframe(df_ver_limpio, use_container_width=True, hide_index=True)
     
     # MÓDULO DE DESCARGA PROTEGIDO CON CONTRASEÑA
     st.markdown("---")
