@@ -150,6 +150,20 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+ARCHIVO_EXCEL = "Registro_Produccion.xlsx"
+
+# Función para extraer dinámicamente la lista de operarios guardados en Excel
+def obtener_lista_operarios():
+    nombres_base = []
+    if os.path.exists(ARCHIVO_EXCEL):
+        try:
+            df = pd.read_excel(ARCHIVO_EXCEL)
+            if "Operario" in df.columns:
+                nombres_base = df["Operario"].dropna().astype(str).str.strip().unique().tolist()
+        except:
+            pass
+    return sorted([n for n in nombres_base if n != ""])
+
 # Listas Predeterminadas
 MAQUINAS_LIST = [
     "Punzonadora Trumpf Trumatic 2000R",
@@ -214,23 +228,34 @@ with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
     col1, col2, col3 = st.columns(3)
     
     with col1:
+        # LISTA DESPLEGABLE DINÁMICA DE OPERARIOS
+        lista_ops = obtener_lista_operarios()
+        opciones_operario = ["➕ Registrar Nuevo Operario / Tomador..."] + lista_ops
+        
+        operario_sel = st.selectbox("Operario / Tomador de Tiempos", opciones_operario)
+        
+        if operario_sel == "➕ Registrar Nuevo Operario / Tomador...":
+            operario = st.text_input("Nombre y Apellido Completo", placeholder="Ej: Juan Pérez").strip()
+        else:
+            operario = operario_sel
+
         orden = st.text_input("Orden / OP", placeholder="Ej: 2345678")
         fecha = st.date_input("Fecha de Toma", datetime.date.today())
         turno = st.selectbox("Turno", ["Día", "Tarde", "Noche"])
-        maquina = st.selectbox("Máquina / Estación", MAQUINAS_LIST)
     
     with col2:
+        maquina = st.selectbox("Máquina / Estación", MAQUINAS_LIST)
         nombre_general = st.text_input("Proyecto / Producto", placeholder="Ej: Mesa de Juntas")
         detalle_pieza = st.text_input("Detalle Pieza / Nesting", placeholder="Ej: Nesting Completo - 1 láminas")
         material = st.selectbox("Material", MATERIALES_LIST)
-        
+
+    with col3:
         calibre_sel = st.selectbox("Calibre", CALIBRES_LIST)
         if calibre_sel == "✍️ OTRO / LIBRE (Escribir en vivo)":
             calibre = st.text_input("Especificar Calibre Manual", placeholder="Ej: 4.5 mm / 1/4\"")
         else:
             calibre = calibre_sel
 
-    with col3:
         cant_general = st.number_input("Cantidad Lote Total", min_value=1, step=1, value=1)
         cant_piezas_ok = st.number_input("Piezas Procesadas OK", min_value=0, step=1, value=1)
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
@@ -307,11 +332,12 @@ st.markdown("---")
 if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=True, type="primary"):
     if not orden or not maquina:
         st.error("⚠️ Ingrese la 'Orden / OP' y seleccione la 'Máquina' para guardar.")
+    elif not operario:
+        st.error("⚠️ Ingrese o seleccione el nombre del 'Operario / Tomador de Tiempos'.")
     else:
-        archivo_excel = "Registro_Produccion.xlsx"
-        
         # Mapeo de columnas estandarizadas
         nuevo_registro = {
+            "Operario": str(operario),
             "Orden": str(orden),
             "Fecha": fecha.strftime("%Y-%m-%d"),
             "Turno": str(turno),
@@ -333,9 +359,9 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         
         df_nuevo = pd.DataFrame([nuevo_registro])
         
-        if os.path.exists(archivo_excel):
+        if os.path.exists(ARCHIVO_EXCEL):
             try:
-                df_ex = pd.read_excel(archivo_excel)
+                df_ex = pd.read_excel(ARCHIVO_EXCEL)
                 df_final = pd.concat([df_ex, df_nuevo], ignore_index=True)
             except:
                 df_final = df_nuevo
@@ -344,7 +370,7 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
             
         # Depurar filas completamente vacías
         df_final = df_final.dropna(subset=["Orden"])
-        df_final.to_excel(archivo_excel, index=False)
+        df_final.to_excel(ARCHIVO_EXCEL, index=False)
         
         st.success(f"✅ ¡Registro de la Orden {orden} guardado y matriz depurada correctamente!")
 
@@ -372,13 +398,13 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
                 st.error("🔴 **Alerta de eficiencia:** Alto porcentaje de tiempo improductivo detectado.")
 
         resetear_cronometros()
+        st.rerun()
 
 # MOSTRAR MATRIZ Y FILTRAR FILAS VACÍAS (PROTEGIDA VISUALMENTE)
 st.markdown('<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS DE PLANTA</div>', unsafe_allow_html=True)
-archivo_excel = "Registro_Produccion.xlsx"
 
-if os.path.exists(archivo_excel):
-    df_ver = pd.read_excel(archivo_excel)
+if os.path.exists(ARCHIVO_EXCEL):
+    df_ver = pd.read_excel(ARCHIVO_EXCEL)
     
     # Limpieza visual en pantalla
     df_ver_limpio = df_ver.dropna(subset=["Orden"]).reset_index(drop=True)
