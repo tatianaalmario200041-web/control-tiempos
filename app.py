@@ -5,6 +5,16 @@ import time
 import os
 import io
 import json
+import pytz
+
+# Configuración de Zona Horaria (Bogotá - Colombia UTC-5)
+ZONA_BOGOTA = pytz.timezone('America/Bogota')
+
+def obtener_hora_bogota():
+    return datetime.datetime.now(ZONA_BOGOTA).strftime("%H:%M:%S")
+
+def obtener_fecha_bogota():
+    return datetime.datetime.now(ZONA_BOGOTA).date()
 
 # Configuración de Página
 st.set_page_config(
@@ -154,9 +164,9 @@ st.markdown("""
 ARCHIVO_EXCEL = "Registro_Produccion.xlsx"
 ARCHIVO_OPERARIOS = "Lista_Operarios.json"
 
-# Inicializar Hora de Inicio de Captura del Registro
+# Inicializar Hora de Inicio de Captura en Hora de Bogotá
 if "hora_inicio_registro" not in st.session_state or st.session_state["hora_inicio_registro"] is None:
-    st.session_state["hora_inicio_registro"] = datetime.datetime.now().strftime("%H:%M:%S")
+    st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
 # Cargar y guardar lista maestra de operarios
 def cargar_operarios():
@@ -188,7 +198,7 @@ def guardar_operarios(lista_operarios):
 if "lista_operarios" not in st.session_state:
     st.session_state["lista_operarios"] = cargar_operarios()
 
-# Listas Predeterminados
+# Listas Predeterminadas
 MAQUINAS_LIST = [
     "Punzonadora Trumpf Trumatic 2000R",
     "Cortadora Láser CNC (MT 36) - F 3015",
@@ -246,7 +256,7 @@ def resetear_cronometros():
         st.session_state[f"tiempo_{c}"] = 0.0
         st.session_state[f"corriendo_{c}"] = False
         st.session_state[f"inicio_{c}"] = None
-    st.session_state["hora_inicio_registro"] = datetime.datetime.now().strftime("%H:%M:%S")
+    st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
 # PARÁMETROS ORGANIZADOS EN 3 COLUMNAS LIMPIAS
 with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
@@ -277,7 +287,7 @@ with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
             operario = ""
 
         orden = st.text_input("Orden / OP", placeholder="Ej: 2345678")
-        fecha = st.date_input("Fecha de Toma", datetime.date.today())
+        fecha = st.date_input("Fecha de Toma", obtener_fecha_bogota())
         turno = st.selectbox("Turno", ["Día", "Tarde", "Noche"])
     
     with col2:
@@ -376,15 +386,13 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
             st.session_state["lista_operarios"].append(operario)
             guardar_operarios(st.session_state["lista_operarios"])
 
-        hora_inicio = st.session_state.get("hora_inicio_registro", datetime.datetime.now().strftime("%H:%M:%S"))
-        hora_fin = datetime.datetime.now().strftime("%H:%M:%S")
+        hora_inicio = st.session_state.get("hora_inicio_registro", obtener_hora_bogota())
+        hora_fin = obtener_hora_bogota()
 
         nuevo_registro = {
             "Operario": str(operario),
             "Orden": str(orden),
             "Fecha": fecha.strftime("%Y-%m-%d"),
-            "Hora Inicio": str(hora_inicio),
-            "Hora Fin": str(hora_fin),
             "Turno": str(turno),
             "Máquina": str(maquina),
             "Proyecto": str(nombre_general),
@@ -399,7 +407,9 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
             "Espera Operario (min)": float(t_espera),
             "Paro Máquina (min)": float(t_paros),
             "Descargue (min)": float(t_descargue),
-            "Motivo Paro": str(motivo_paro)
+            "Motivo Paro": str(motivo_paro),
+            "Hora Inicio": str(hora_inicio),
+            "Hora Fin": str(hora_fin)
         }
         
         df_nuevo = pd.DataFrame([nuevo_registro])
@@ -413,6 +423,10 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         else:
             df_final = df_nuevo
             
+        # Forzar que Hora Inicio y Hora Fin queden estrictamente al final
+        cols_resto = [col for col in df_final.columns if col not in ["Hora Inicio", "Hora Fin"]]
+        df_final = df_final[cols_resto + ["Hora Inicio", "Hora Fin"]]
+        
         df_final = df_final.dropna(subset=["Orden"])
         df_final.to_excel(ARCHIVO_EXCEL, index=False)
         
@@ -450,11 +464,16 @@ st.markdown('<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS DE P
 if os.path.exists(ARCHIVO_EXCEL):
     df_ver = pd.read_excel(ARCHIVO_EXCEL)
     df_ver_limpio = df_ver.dropna(subset=["Orden"]).reset_index(drop=True)
+    
+    # Reordenar columnas para visualización
+    cols_resto = [col for col in df_ver_limpio.columns if col not in ["Hora Inicio", "Hora Fin"]]
+    df_ver_limpio = df_ver_limpio[cols_resto + ["Hora Inicio", "Hora Fin"]]
+    
     st.dataframe(df_ver_limpio, use_container_width=True, hide_index=True)
     
     # MÓDULO DE DESCARGA PROTEGIDO CON CONTRASEÑA
     st.markdown("---")
-    st.markdown("🔒 **DEPARTAMENTO DE COSTOS - Base de datos protegida por Tatiana Almario**")
+    st.markdown("🔒 **DEPARTAMENTO DE COSTOS - Base de datos protegida**")
     
     col_pass, col_btn = st.columns([1, 2])
     
