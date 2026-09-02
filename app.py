@@ -164,7 +164,7 @@ st.markdown("""
 ARCHIVO_EXCEL = "Registro_Produccion.xlsx"
 ARCHIVO_OPERARIOS = "Lista_Operarios.json"
 
-# Inicializar Hora de Inicio de Captura en Hora de Bogotá
+# Inicializar Hora de Inicio de Captura
 if "hora_inicio_registro" not in st.session_state or st.session_state["hora_inicio_registro"] is None:
     st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
@@ -258,7 +258,7 @@ def resetear_cronometros():
         st.session_state[f"inicio_{c}"] = None
     st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
-# PARÁMETROS ORGANIZADOS EN 3 COLUMNAS LIMPIAS
+# PARÁMETROS ORGANIZADOS EN 3 COLUMNAS
 with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
     col1, col2, col3 = st.columns(3)
     
@@ -339,9 +339,12 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
             
             if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn, use_container_width=True):
                 if esta_corriendo:
+                    # Guardar tiempo acumulado y detener
                     st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
                     st.session_state[f"corriendo_{clave}"] = False
+                    st.session_state[f"inicio_{clave}"] = None
                 else:
+                    # Iniciar cronómetro
                     st.session_state[f"inicio_{clave}"] = time.time()
                     st.session_state[f"corriendo_{clave}"] = True
                 st.rerun()
@@ -350,6 +353,7 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
             if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
+                st.session_state[f"inicio_{clave}"] = None
                 st.rerun()
                 
         return round(tiempo_actual / 60.0, 2)
@@ -367,11 +371,6 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         t_espera = render_cronometro("OPERARIO EN ESPERA (MIN)", "Espera Operario")
         t_paros = render_cronometro("MUERTO / PARO MÁQUINA (MIN)", "Paros")
         motivo_paro = st.selectbox("MOTIVO PRINCIPAL DEL PARO", MOTIVOS_PARO_LIST)
-
-# Refresco de cronómetros
-if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
-    time.sleep(1)
-    st.rerun()
 
 st.markdown("---")
 
@@ -423,7 +422,6 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         else:
             df_final = df_nuevo
             
-        # Forzar que Hora Inicio y Hora Fin queden estrictamente al final
         cols_resto = [col for col in df_final.columns if col not in ["Hora Inicio", "Hora Fin"]]
         df_final = df_final[cols_resto + ["Hora Inicio", "Hora Fin"]]
         
@@ -432,7 +430,7 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         
         st.success(f"✅ ¡Registro de la Orden {orden} guardado (Inicio: {hora_inicio} - Fin: {hora_fin})!")
 
-        # --- ANÁLISIS DE EFICIENCIA EN VIVO DE ESTE REGISTRO ---
+        # ANÁLISIS DE EFICIENCIA EN VIVO
         tiempo_total = float(t_setup) + float(t_ciclo) + float(t_descargue) + float(t_espera) + float(t_paros)
         tiempo_productivo = float(t_ciclo)
         tiempo_improductivo = float(t_espera) + float(t_paros)
@@ -458,20 +456,18 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         resetear_cronometros()
         st.rerun()
 
-# MOSTRAR MATRIZ Y FILTRAR FILAS VACÍAS (PROTEGIDA VISUALMENTE)
+# HISTORIAL Y MATRIZ
 st.markdown('<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS DE PLANTA</div>', unsafe_allow_html=True)
 
 if os.path.exists(ARCHIVO_EXCEL):
     df_ver = pd.read_excel(ARCHIVO_EXCEL)
     df_ver_limpio = df_ver.dropna(subset=["Orden"]).reset_index(drop=True)
     
-    # Reordenar columnas para visualización
     cols_resto = [col for col in df_ver_limpio.columns if col not in ["Hora Inicio", "Hora Fin"]]
     df_ver_limpio = df_ver_limpio[cols_resto + ["Hora Inicio", "Hora Fin"]]
     
     st.dataframe(df_ver_limpio, use_container_width=True, hide_index=True)
     
-    # MÓDULO DE DESCARGA PROTEGIDO CON CONTRASEÑA
     st.markdown("---")
     st.markdown("🔒 **DEPARTAMENTO DE COSTOS - Base de datos protegida**")
     
@@ -520,3 +516,9 @@ st.markdown("""
         Desarrollado por <span>Tatiana Almario • Asistente de Costos y Métodos</span>
     </div>
 """, unsafe_allow_html=True)
+
+# BUCLE DE REFRESCO AUTOMÁTICO EN TIEMPO REAL
+# Si al menos un cronómetro está activo, recarga la app cada 1 segundo automáticamente.
+if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
+    time.sleep(1)
+    st.rerun()
