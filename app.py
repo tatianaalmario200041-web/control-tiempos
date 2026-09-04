@@ -314,7 +314,8 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         esta_corriendo = st.session_state[f"corriendo_{clave}"]
         tiempo_acumulado = st.session_state[f"tiempo_{clave}"]
         
-        if esta_corriendo:
+        # Cálculo dinámico del tiempo transcurrido en tiempo real
+        if esta_corriendo and st.session_state[f"inicio_{clave}"] is not None:
             tiempo_actual = tiempo_acumulado + (time.time() - st.session_state[f"inicio_{clave}"])
         else:
             tiempo_actual = tiempo_acumulado
@@ -339,12 +340,10 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
             
             if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn, use_container_width=True):
                 if esta_corriendo:
-                    # Guardar tiempo acumulado y detener
                     st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
                     st.session_state[f"corriendo_{clave}"] = False
                     st.session_state[f"inicio_{clave}"] = None
                 else:
-                    # Iniciar cronómetro
                     st.session_state[f"inicio_{clave}"] = time.time()
                     st.session_state[f"corriendo_{clave}"] = True
                 st.rerun()
@@ -430,7 +429,6 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         
         st.success(f"✅ ¡Registro de la Orden {orden} guardado (Inicio: {hora_inicio} - Fin: {hora_fin})!")
 
-        # ANÁLISIS DE EFICIENCIA EN VIVO
         tiempo_total = float(t_setup) + float(t_ciclo) + float(t_descargue) + float(t_espera) + float(t_paros)
         tiempo_productivo = float(t_ciclo)
         tiempo_improductivo = float(t_espera) + float(t_paros)
@@ -518,7 +516,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # BUCLE DE REFRESCO AUTOMÁTICO EN TIEMPO REAL
-# Si al menos un cronómetro está activo, recarga la app cada 1 segundo automáticamente.
+# Forzar refresco dinamico en pantalla segundo a segundo
 if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
     time.sleep(1)
     st.rerun()
