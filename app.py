@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS Nivel Ingeniería + Bloqueo de Descarga en el Historial
+# Estilos CSS Nivel Ingeniería
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -33,12 +33,12 @@ st.markdown("""
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
     
-    /* Ocultar botón de descarga nativo de st.dataframe */
+    /* Ocultar toolbar nativo de tablas */
     [data-testid="stElementToolbar"] {
         display: none !important;
     }
     
-    /* Header principal compacto */
+    /* Header principal */
     .header-container {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         padding: 16px 20px;
@@ -63,7 +63,7 @@ st.markdown("""
         margin-top: 2px;
     }
     
-    /* Cards Cronómetros */
+    /* Cards de Cronómetro */
     .timer-card {
         background: #ffffff;
         border: 1px solid #cbd5e1;
@@ -198,7 +198,7 @@ def guardar_operarios(lista_operarios):
 if "lista_operarios" not in st.session_state:
     st.session_state["lista_operarios"] = cargar_operarios()
 
-# Listas Predeterminadas
+# Listas Predeterminados
 MAQUINAS_LIST = [
     "Punzonadora Trumpf Trumatic 2000R",
     "Cortadora Láser CNC (MT 36) - F 3015",
@@ -221,8 +221,15 @@ MATERIALES_LIST = [
 ]
 
 CALIBRES_LIST = [
-    "0.9 mm (C20)", "1.2 mm (C18)", "1.5 mm (C16)", "1.9 mm (C14)", 
-    "2.5 mm (C12)", "3.0 mm (1/8\")", "4.5 mm (3/16\")", "6.0 mm (1/4\")",
+    "0.8 mm (C22)",
+    "0.9 mm (C20)", 
+    "1.2 mm (C18)", 
+    "1.5 mm (C16)", 
+    "1.9 mm (C14)", 
+    "2.5 mm (C12)", 
+    "3.0 mm (1/8\")", 
+    "4.5 mm (3/16\")", 
+    "6.0 mm (1/4\")",
     "✍️ OTRO / LIBRE (Escribir en vivo)"
 ]
 
@@ -241,7 +248,7 @@ MOTIVOS_PARO_LIST = [
     "Otro / Imprevisto"
 ]
 
-# Session State para Cronómetros
+# Inicialización de Session State para Cronómetros
 cronometros = ["Setup", "Ciclo Real", "Descargue", "Paros", "Espera Operario"]
 for c in cronometros:
     if f"tiempo_{c}" not in st.session_state:
@@ -293,7 +300,7 @@ with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
     with col2:
         maquina = st.selectbox("Máquina / Estación", MAQUINAS_LIST)
         nombre_general = st.text_input("Proyecto / Producto", placeholder="Ej: Mesa de Juntas")
-        detalle_pieza = st.text_input("Detalle Pieza / Nesting", placeholder="Ej: Nesting Completo - 1 láminas")
+        detalle_pieza = st.text_input("Detalle Pieza / Nesting", placeholder="Ej: Nesting Completo - 1 lámina")
         material = st.selectbox("Material", MATERIALES_LIST)
 
     with col3:
@@ -314,7 +321,7 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         esta_corriendo = st.session_state[f"corriendo_{clave}"]
         tiempo_acumulado = st.session_state[f"tiempo_{clave}"]
         
-        # Cálculo dinámico del tiempo transcurrido en tiempo real
+        # Cálculo usando marca de tiempo UNIX absoluta (Inmune a bloqueos de pantalla / WhatsApp)
         if esta_corriendo and st.session_state[f"inicio_{clave}"] is not None:
             tiempo_actual = tiempo_acumulado + (time.time() - st.session_state[f"inicio_{clave}"])
         else:
@@ -516,7 +523,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # BUCLE DE REFRESCO AUTOMÁTICO EN TIEMPO REAL
-# Forzar refresco dinamico en pantalla segundo a segundo
 if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
     time.sleep(1)
     st.rerun()
