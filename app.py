@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilos CSS KiuT: Panel superior totalmente fijo, números grandes, bordes divinos y cuadro rosado oscuro
+# Estilos CSS KiuT optimizados: Tarjetas hermosas, números grandes y bordes divinos
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
@@ -26,7 +26,7 @@ st.markdown("""
     .header-title {
         font-family: 'Montserrat', sans-serif;
         font-weight: 800;
-        font-size: 2.3rem;
+        font-size: 2.5rem;
         background: linear-gradient(135deg, #9333EA 0%, #DB2777 50%, #F43F5E 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -39,7 +39,7 @@ st.markdown("""
         color: #831843;
         font-weight: 600;
         font-size: 1.1rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
     }
 
     .stButton>button {
@@ -59,25 +59,24 @@ st.markdown("""
         transform: translateY(-2px);
     }
     
-    /* Tarjetas de métricas con bordes más lindos y números grandes */
+    /* Tarjetas de métricas con números grandes y bordes divinos */
     .metric-card-big {
         background-color: #FFFFFF;
-        padding: 18px 12px;
-        border-radius: 20px;
-        box-shadow: 0 8px 20px rgba(219, 39, 119, 0.12);
-        border: 2.5s solid #F472B6;
+        padding: 16px 10px;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(219, 39, 119, 0.12);
         border: 2.5px solid #EC4899;
         text-align: center;
-        margin-bottom: 6px;
+        margin-bottom: 10px;
     }
     
     .period-box {
         background: linear-gradient(135deg, #F3E8FF 0%, #FCE7F3 100%);
-        padding: 15px;
+        padding: 18px;
         border-radius: 18px;
         border: 3px dashed #EC4899;
         box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
-        margin-bottom: 15px;
+        margin-bottom: 20px;
     }
     
     .kiut-card {
@@ -89,16 +88,17 @@ st.markdown("""
         margin-bottom: 15px;
     }
 
-    /* Cuadro rosado más oscuro para el total global fijo con números grandes blancos */
+    /* Cuadro rosado oscuro fijo en el sidebar con números blancos grandes */
     .global-dark-card {
         background: linear-gradient(135deg, #DB2777 0%, #9333EA 100%);
-        padding: 16px 20px;
+        padding: 16px;
         border-radius: 16px;
         color: white;
         box-shadow: 0 6px 18px rgba(147, 51, 234, 0.3);
-        margin-top: 10px;
-        margin-bottom: 8px;
+        margin-top: 15px;
+        margin-bottom: 15px;
         border: 2px solid #F472B6;
+        text-align: center;
     }
 
     /* Barra de progreso personalizada KiuT */
@@ -116,20 +116,6 @@ st.markdown("""
         background: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
         border-radius: 10px;
         transition: width 0.4s ease;
-    }
-
-    /* Panel Superior Totalmente Fijo (Sticky) en la pantalla */
-    .sticky-summary {
-        position: sticky;
-        top: 0;
-        z-index: 99999;
-        background: rgba(253, 244, 255, 0.98);
-        backdrop-filter: blur(14px);
-        padding: 14px 10px;
-        border-bottom: 4px solid #DB2777;
-        box-shadow: 0 10px 25px rgba(219, 39, 119, 0.22);
-        margin-bottom: 20px;
-        border-radius: 0 0 20px 20px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -200,10 +186,62 @@ if clave_periodo_actual not in st.session_state.pagos_por_periodo:
 if clave_periodo_actual not in st.session_state.imprevistos_por_periodo:
     st.session_state.imprevistos_por_periodo[clave_periodo_actual] = []
 
-# --- 3. SIDEBAR: Configuración y Excel ---
-st.sidebar.header("🌸 Configuración Base")
+
+# ========================================================
+# --- 3. SIDEBAR FIJO (PANEL LATERAL CON RENDIMIENTO Y TOTALES) ---
+# ========================================================
+st.sidebar.header("🌸 Panel Fijo de Control")
 saldo_actual_banco = st.sidebar.number_input("Saldo Actual en Bancolombia (COP)", value=2800000.0, step=100000.0)
 nomina_quincenal_neta = st.sidebar.number_input("Pago Neto Quincenal Base", value=1294007.0, step=10000.0)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown(f"### 💸 Rendimiento: {nombre_periodo_corto if 'nombre_periodo_corto' in locals() else periodo_filtro}")
+
+presupuesto_quincena_inicial = st.sidebar.number_input("📥 Base Quincena (COP)", value=nomina_quincenal_neta, step=10000.0, key=f"base_{clave_periodo_actual}")
+ingresos_extra = st.sidebar.number_input("➕ Ingresos Extras (COP)", value=0.0, step=10000.0, key=f"extra_{clave_periodo_actual}")
+
+pagos_actuales = st.session_state.pagos_por_periodo[clave_periodo_actual]
+total_pagado_obligaciones_actual = sum(item["valor"] for item in st.session_state.obligaciones_base if item["periodo"] == periodo_filtro and pagos_actuales.get(item["id"], False))
+total_imprevistos = sum(imp["valor"] for imp in st.session_state.imprevistos_por_periodo[clave_periodo_actual])
+quincena_que_queda = (presupuesto_quincena_inicial + ingresos_extra) - total_pagado_obligaciones_actual - total_imprevistos
+
+# Métricas en el Sidebar Fijo con números grandes
+st.sidebar.markdown(f"""
+<div style="background: white; padding: 10px; border-radius: 12px; border: 2px solid #EC4899; text-align: center; margin-bottom: 8px;">
+    <span style="color:#9333EA; font-size:0.85rem; font-weight:700;">📥 Ingresos:</span><br>
+    <b style="color:#1E293B; font-size:1.15rem;">{formato_COP(presupuesto_quincena_inicial + ingresos_extra)}</b>
+</div>
+<div style="background: white; padding: 10px; border-radius: 12px; border: 2px solid #EC4899; text-align: center; margin-bottom: 8px;">
+    <span style="color:#DB2777; font-size:0.85rem; font-weight:700;">📤 Pagado:</span><br>
+    <b style="color:#1E293B; font-size:1.15rem;">{formato_COP(total_pagado_obligaciones_actual)}</b>
+</div>
+<div style="background: white; padding: 10px; border-radius: 12px; border: 2px solid #D97706; text-align: center; margin-bottom: 8px;">
+    <span style="color:#D97706; font-size:0.85rem; font-weight:700;">🚨 Imprevistos:</span><br>
+    <b style="color:#1E293B; font-size:1.15rem;">{formato_COP(total_imprevistos)}</b>
+</div>
+<div style="background: white; padding: 10px; border-radius: 12px; border: 2px solid {'#10B981' if quincena_que_queda >= 0 else '#EF4444'}; text-align: center; margin-bottom: 8px;">
+    <span style="color:{'#10B981' if quincena_que_queda >= 0 else '#EF4444'}; font-size:0.85rem; font-weight:700;">✨ QUEDA:</span><br>
+    <b style="color:#1E293B; font-size:1.15rem;">{formato_COP(quincena_que_queda)}</b>
+</div>
+""", unsafe_allow_html=True)
+
+# CUADRO ROSADO OSCURO FIJO EN EL SIDEBAR CON TOTAL DE DEUDAS Y % DE AVANCE TOTAL
+total_deuda_global = sum(item["valor"] * item["total"] if "total" in item else item["valor"] for item in st.session_state.obligaciones_base)
+total_pagado_global = sum(item["valor"] * item["pagadas"] if "total" in item else (item["valor"] if item.get("pagadas", False) else 0) for item in st.session_state.obligaciones_base)
+porcentaje_global = int((total_pagado_global / total_deuda_global) * 100) if total_deuda_global > 0 else 0
+
+st.sidebar.markdown(f"""
+<div class="global-dark-card">
+    <div style="font-size: 0.95rem; font-weight: 800; margin-bottom: 4px;">👑 TOTAL GLOBAL HISTÓRICO</div>
+    <div style="font-size: 1.1rem; font-weight: 800; margin: 4px 0;">
+        Deuda: <span style="color: #FFFFFF;">{formato_COP(total_deuda_global)}</span><br>
+        Avance Total: <span style="color: #FDE047;">{porcentaje_global}%</span>
+    </div>
+    <div style="background-color: rgba(255,255,255,0.3); border-radius: 10px; height: 10px; margin-top: 6px; overflow: hidden;">
+        <div style="background-color: #FFFFFF; height: 100%; width: {porcentaje_global}%;"></div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Exportar a Excel")
@@ -230,61 +268,29 @@ with st.sidebar.form(key="form_imprevisto_side"):
 
 
 # ========================================================
-# --- 4. PANEL SUPERIOR FIJO (STICKY BAR) CON NÚMEROS GRANDES ---
+# --- 4. CUERPO PRINCIPAL: TARJETAS GRANDES Y DEUDAS ---
 # ========================================================
-st.markdown('<div class="sticky-summary">', unsafe_allow_html=True)
-st.markdown(f"### 💸 Rendimiento: {clave_periodo_actual}")
-
-col_config1, col_config2 = st.columns(2)
-with col_config1:
-    presupuesto_quincena_inicial = st.number_input("📥 Base Quincena (COP)", value=nomina_quincenal_neta, step=10000.0, key=f"base_{clave_periodo_actual}")
-with col_config2:
-    ingresos_extra = st.number_input("➕ Ingresos Extras (COP)", value=0.0, step=10000.0, key=f"extra_{clave_periodo_actual}")
-
-pagos_actuales = st.session_state.pagos_por_periodo[clave_periodo_actual]
-total_pagado_obligaciones_actual = sum(item["valor"] for item in st.session_state.obligaciones_base if item["periodo"] == periodo_filtro and pagos_actuales.get(item["id"], False))
-total_imprevistos = sum(imp["valor"] for imp in st.session_state.imprevistos_por_periodo[clave_periodo_actual])
-quincena_que_queda = (presupuesto_quincena_inicial + ingresos_extra) - total_pagado_obligaciones_actual - total_imprevistos
-
-# Tarjetas con números grandes y bordes divinos
-col_q1, col_q2, col_q3, col_q4 = st.columns(4)
-with col_q1:
-    st.markdown(f'<div class="metric-card-big"><h4 style="color:#9333EA; font-size:0.9rem; font-weight:700;">📥 Ingresos</h4><h2 style="color:#1E293B; font-size:1.5rem; font-weight:800; margin:4px 0;">{formato_COP(presupuesto_quincena_inicial + ingresos_extra)}</h2></div>', unsafe_allow_html=True)
-with col_q2:
-    st.markdown(f'<div class="metric-card-big"><h4 style="color:#DB2777; font-size:0.9rem; font-weight:700;">📤 Pagado</h4><h2 style="color:#1E293B; font-size:1.5rem; font-weight:800; margin:4px 0;">{formato_COP(total_pagado_obligaciones_actual)}</h2></div>', unsafe_allow_html=True)
-with col_q3:
-    st.markdown(f'<div class="metric-card-big"><h4 style="color:#D97706; font-size:0.9rem; font-weight:700;">🚨 Imprevistos</h4><h2 style="color:#1E293B; font-size:1.5rem; font-weight:800; margin:4px 0;">{formato_COP(total_imprevistos)}</h2></div>', unsafe_allow_html=True)
-with col_q4:
-    color_queda = "#10B981" if quincena_que_queda >= 0 else "#EF4444"
-    st.markdown(f'<div class="metric-card-big" style="border: 2.5px solid {color_queda};"><h4 style="color:{color_queda}; font-size:0.9rem; font-weight:700;">✨ QUEDA</h4><h2 style="color:#1E293B; font-size:1.5rem; font-weight:800; margin:4px 0;">{formato_COP(quincena_que_queda)}</h2></div>', unsafe_allow_html=True)
-
 total_deuda_periodo = sum(item["valor"] for item in st.session_state.obligaciones_base if item["periodo"] == periodo_filtro)
 porcentaje_periodo = int((total_pagado_obligaciones_actual / total_deuda_periodo) * 100) if total_deuda_periodo > 0 else 0
 
-st.markdown(f"🌸 **Progreso Periodo ({periodo_filtro}): {porcentaje_periodo}%** ({formato_COP(total_pagado_obligaciones_actual)} de {formato_COP(total_deuda_periodo)})")
+# Tarjetas Principales con Números Grandes y Bordes Lindos
+col_q1, col_q2, col_q3, col_q4 = st.columns(4)
+with col_q1:
+    st.markdown(f'<div class="metric-card-big"><h4 style="color:#9333EA; font-size:0.95rem; font-weight:700;">📥 Ingresos</h4><h2 style="color:#1E293B; font-size:1.6rem; font-weight:800; margin:6px 0;">{formato_COP(presupuesto_quincena_inicial + ingresos_extra)}</h2></div>', unsafe_allow_html=True)
+with col_q2:
+    st.markdown(f'<div class="metric-card-big"><h4 style="color:#DB2777; font-size:0.95rem; font-weight:700;">📤 Pagado</h4><h2 style="color:#1E293B; font-size:1.6rem; font-weight:800; margin:6px 0;">{formato_COP(total_pagado_obligaciones_actual)}</h2></div>', unsafe_allow_html=True)
+with col_q3:
+    st.markdown(f'<div class="metric-card-big"><h4 style="color:#D97706; font-size:0.95rem; font-weight:700;">🚨 Imprevistos</h4><h2 style="color:#1E293B; font-size:1.6rem; font-weight:800; margin:6px 0;">{formato_COP(total_imprevistos)}</h2></div>', unsafe_allow_html=True)
+with col_q4:
+    color_queda = "#10B981" if quincena_que_queda >= 0 else "#EF4444"
+    st.markdown(f'<div class="metric-card-big" style="border: 2.5px solid {color_queda};"><h4 style="color:{color_queda}; font-size:0.95rem; font-weight:700;">✨ QUEDA</h4><h2 style="color:#1E293B; font-size:1.6rem; font-weight:800; margin:6px 0;">{formato_COP(quincena_que_queda)}</h2></div>', unsafe_allow_html=True)
+
+st.markdown(f"#### 🌸 Progreso General del Periodo ({periodo_filtro}): **{porcentaje_periodo}% Pagado** ({formato_COP(total_pagado_obligaciones_actual)} de {formato_COP(total_deuda_periodo)})")
 st.markdown(f'''
     <div class="progress-container">
         <div class="progress-bar-kiut" style="width: {porcentaje_periodo}%;"></div>
     </div>
 ''', unsafe_allow_html=True)
-
-# CUADRO ROSADO OSCURO FIJO ARRIBA CON TOTALES GLOBALES Y NÚMEROS BLANCOS GRANDES
-total_deuda_global = sum(item["valor"] * item["total"] if "total" in item else item["valor"] for item in st.session_state.obligaciones_base)
-total_pagado_global = sum(item["valor"] * item["pagadas"] if "total" in item else (item["valor"] if item.get("pagadas", False) else 0) for item in st.session_state.obligaciones_base)
-porcentaje_global = int((total_pagado_global / total_deuda_global) * 100) if total_deuda_global > 0 else 0
-
-st.markdown(f"""
-<div class="global-dark-card">
-    <div style="font-size: 1.1rem; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px;">👑 RESUMEN GLOBAL HISTÓRICO DE TODAS TUS DEUDAS</div>
-    <div style="font-size: 1.3rem; font-weight: 800; margin: 4px 0;">
-        Total Deudas: <span style="color: #FFFFFF;">{formato_COP(total_deuda_global)}</span> | Avance Total: <span style="color: #FDE047;">{porcentaje_global}%</span> ({formato_COP(total_pagado_global)})
-    </div>
-    <div style="background-color: rgba(255,255,255,0.3); border-radius: 10px; height: 12px; margin-top: 8px; overflow: hidden;">
-        <div style="background-color: #FFFFFF; height: 100%; width: {porcentaje_global}%; border-radius: 10px;"></div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -302,25 +308,25 @@ for item in st.session_state.obligaciones_base:
     c1, c2, c3 = st.columns([3, 2, 1])
     
     with c1:
-        st.markdown(f"<span style='font-size: 1.1rem; font-weight: 700; color: #1E293B;'>{item['nombre']}</span>", unsafe_allow_html=True)
-        st.markdown(f"<span style='color:#9333EA; font-size:0.95rem; font-weight:bold;'>[{item['tipo']}] • Cuota: {formato_COP(item['valor'])}</span>", unsafe_allow_html=True)
-        st.markdown(f"<span style='color:#64748B; font-size:0.85rem;'>📅 Vence: <b>{item.get('fecha_pago', 'N/A')}</b></span>", unsafe_allow_html=True)
+        st.markdown(f"<span style='font-size: 1.15rem; font-weight: 700; color: #1E293B;'>{item['nombre']}</span>", unsafe_allow_html=True)
+        st.markdown(f"<span style='color:#9333EA; font-size:1rem; font-weight:bold;'>[{item['tipo']}] • Cuota: {formato_COP(item['valor'])}</span>", unsafe_allow_html=True)
+        st.markdown(f"<span style='color:#64748B; font-size:0.9rem;'>📅 Vence: <b>{item.get('fecha_pago', 'N/A')}</b></span>", unsafe_allow_html=True)
         
     with c2:
         if "total" in item:
             pct = int((item["pagadas"] / item["total"]) * 100) if item["total"] > 0 else 100
             pend = item["valor"] * max(0, (item["total"] - item["pagadas"]))
-            st.markdown(f"<span style='font-size: 0.95rem;'>Progreso: <b>{item['pagadas']} de {item['total']} ({pct}%)</b></span>", unsafe_allow_html=True)
+            st.markdown(f"<span style='font-size: 1rem;'>Progreso: <b>{item['pagadas']} de {item['total']} ({pct}%)</b></span>", unsafe_allow_html=True)
             st.markdown(f'''
                 <div class="progress-container">
                     <div class="progress-bar-kiut" style="width: {pct}%;"></div>
                 </div>
             ''', unsafe_allow_html=True)
-            st.markdown(f"<span style='color:#E11D48; font-size:0.85rem;'>Faltante total: <b>{formato_COP(pend)}</b></span>", unsafe_allow_html=True)
+            st.markdown(f"<span style='color:#E11D48; font-size:0.9rem;'>Faltante total: <b>{formato_COP(pend)}</b></span>", unsafe_allow_html=True)
         else:
             estado_txt = "🌸 <b>Pagado (100%)</b>" if esta_pagado else "⏳ <b>Pendiente (0%)</b>"
             pct_fijo = 100 if esta_pagado else 0
-            st.markdown(f"<span style='font-size: 0.95rem;'>Estado: {estado_txt}</span>", unsafe_allow_html=True)
+            st.markdown(f"<span style='font-size: 1rem;'>Estado: {estado_txt}</span>", unsafe_allow_html=True)
             st.markdown(f'''
                 <div class="progress-container">
                     <div class="progress-bar-kiut" style="width: {pct_fijo}%;"></div>
@@ -351,7 +357,7 @@ st.markdown("### 📋 Gestión de Nuevas Deudas y Cuentas por Cobrar")
 tab_deudas, tab_prestamos = st.tabs(["💸 Registrar / Ver Nuevas Deudas", "🤝 Dinero que Te Deben"])
 
 with tab_deudas:
-    st.markdown("#### Agrega un nuevo crédito o cuota (¡Se sumará al cuadro rosado oscuro superior automáticamente!):")
+    st.markdown("#### Agrega un nuevo crédito o cuota (¡Se sumará al cuadro rosado oscuro del panel lateral automáticamente!):")
     with st.form(key="form_nueva_deuda_main"):
         col_nd1, col_nd2 = st.columns(2)
         with col_nd1:
