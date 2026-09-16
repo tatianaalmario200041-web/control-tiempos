@@ -3,13 +3,13 @@ import pandas as pd
 import datetime
 
 st.set_page_config(
-    page_title="Finanzas Tatis ",
+    page_title="Finanzas Tatis - CyberPink KiuT",
     page_icon="🌸",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Estilos CSS KiuT: Panel superior completamente fijo con cuadro rosado oscuro para totales globales
+# Estilos CSS KiuT: Panel superior totalmente fijo, números grandes, bordes divinos y cuadro rosado oscuro
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
@@ -59,20 +59,22 @@ st.markdown("""
         transform: translateY(-2px);
     }
     
-    .metric-card {
+    /* Tarjetas de métricas con bordes más lindos y números grandes */
+    .metric-card-big {
         background-color: #FFFFFF;
-        padding: 10px;
-        border-radius: 12px;
-        box-shadow: 0 3px 10px rgba(219, 39, 119, 0.1);
-        border: 2px solid #F472B6;
+        padding: 18px 12px;
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(219, 39, 119, 0.12);
+        border: 2.5s solid #F472B6;
+        border: 2.5px solid #EC4899;
         text-align: center;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
     }
     
     .period-box {
         background: linear-gradient(135deg, #F3E8FF 0%, #FCE7F3 100%);
         padding: 15px;
-        border-radius: 16px;
+        border-radius: 18px;
         border: 3px dashed #EC4899;
         box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
         margin-bottom: 15px;
@@ -81,21 +83,22 @@ st.markdown("""
     .kiut-card {
         background-color: #FFFFFF;
         padding: 20px;
-        border-radius: 16px;
+        border-radius: 18px;
         border: 2px solid #FBCFE8;
-        box-shadow: 0 4px 14px rgba(219, 39, 119, 0.08);
+        box-shadow: 0 6px 16px rgba(219, 39, 119, 0.08);
         margin-bottom: 15px;
     }
 
-    /* Cuadro rosado más oscuro para el total global fijo */
+    /* Cuadro rosado más oscuro para el total global fijo con números grandes blancos */
     .global-dark-card {
-        background: linear-gradient(135deg, #F472B6 0%, #DB2777 100%);
-        padding: 14px 18px;
-        border-radius: 14px;
+        background: linear-gradient(135deg, #DB2777 0%, #9333EA 100%);
+        padding: 16px 20px;
+        border-radius: 16px;
         color: white;
-        box-shadow: 0 4px 12px rgba(219, 39, 119, 0.25);
-        margin-top: 8px;
+        box-shadow: 0 6px 18px rgba(147, 51, 234, 0.3);
+        margin-top: 10px;
         margin-bottom: 8px;
+        border: 2px solid #F472B6;
     }
 
     /* Barra de progreso personalizada KiuT */
@@ -115,18 +118,18 @@ st.markdown("""
         transition: width 0.4s ease;
     }
 
-    /* Panel Superior Totalmente Fijo (Sticky) */
+    /* Panel Superior Totalmente Fijo (Sticky) en la pantalla */
     .sticky-summary {
         position: sticky;
         top: 0;
         z-index: 99999;
         background: rgba(253, 244, 255, 0.98);
         backdrop-filter: blur(14px);
-        padding: 12px 10px;
-        border-bottom: 3px solid #DB2777;
-        box-shadow: 0 8px 22px rgba(219, 39, 119, 0.2);
+        padding: 14px 10px;
+        border-bottom: 4px solid #DB2777;
+        box-shadow: 0 10px 25px rgba(219, 39, 119, 0.22);
         margin-bottom: 20px;
-        border-radius: 0 0 18px 18px;
+        border-radius: 0 0 20px 20px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -226,9 +229,9 @@ with st.sidebar.form(key="form_imprevisto_side"):
         st.rerun()
 
 
-# ==========================================
-# --- 4. PANEL SUPERIOR FIJO (STICKY BAR) ---
-# ==========================================
+# ========================================================
+# --- 4. PANEL SUPERIOR FIJO (STICKY BAR) CON NÚMEROS GRANDES ---
+# ========================================================
 st.markdown('<div class="sticky-summary">', unsafe_allow_html=True)
 st.markdown(f"### 💸 Rendimiento: {clave_periodo_actual}")
 
@@ -243,16 +246,17 @@ total_pagado_obligaciones_actual = sum(item["valor"] for item in st.session_stat
 total_imprevistos = sum(imp["valor"] for imp in st.session_state.imprevistos_por_periodo[clave_periodo_actual])
 quincena_que_queda = (presupuesto_quincena_inicial + ingresos_extra) - total_pagado_obligaciones_actual - total_imprevistos
 
+# Tarjetas con números grandes y bordes divinos
 col_q1, col_q2, col_q3, col_q4 = st.columns(4)
 with col_q1:
-    st.markdown(f'<div class="metric-card"><h4 style="color:#9333EA; font-size:0.85rem;">📥 Ingresos</h4><h3 style="color:#333; font-size:1.05rem;">{formato_COP(presupuesto_quincena_inicial + ingresos_extra)}</h3></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card-big"><h4 style="color:#9333EA; font-size:0.9rem; font-weight:700;">📥 Ingresos</h4><h2 style="color:#1E293B; font-size:1.5rem; font-weight:800; margin:4px 0;">{formato_COP(presupuesto_quincena_inicial + ingresos_extra)}</h2></div>', unsafe_allow_html=True)
 with col_q2:
-    st.markdown(f'<div class="metric-card"><h4 style="color:#DB2777; font-size:0.85rem;">📤 Pagado</h4><h3 style="color:#333; font-size:1.05rem;">{formato_COP(total_pagado_obligaciones_actual)}</h3></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card-big"><h4 style="color:#DB2777; font-size:0.9rem; font-weight:700;">📤 Pagado</h4><h2 style="color:#1E293B; font-size:1.5rem; font-weight:800; margin:4px 0;">{formato_COP(total_pagado_obligaciones_actual)}</h2></div>', unsafe_allow_html=True)
 with col_q3:
-    st.markdown(f'<div class="metric-card"><h4 style="color:#D97706; font-size:0.85rem;">🚨 Imprevistos</h4><h3 style="color:#333; font-size:1.05rem;">{formato_COP(total_imprevistos)}</h3></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card-big"><h4 style="color:#D97706; font-size:0.9rem; font-weight:700;">🚨 Imprevistos</h4><h2 style="color:#1E293B; font-size:1.5rem; font-weight:800; margin:4px 0;">{formato_COP(total_imprevistos)}</h2></div>', unsafe_allow_html=True)
 with col_q4:
     color_queda = "#10B981" if quincena_que_queda >= 0 else "#EF4444"
-    st.markdown(f'<div class="metric-card" style="border: 2px solid {color_queda};"><h4 style="color:{color_queda}; font-size:0.85rem;">✨ QUEDA</h4><h3 style="color:#333; font-size:1.05rem;">{formato_COP(quincena_que_queda)}</h3></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card-big" style="border: 2.5px solid {color_queda};"><h4 style="color:{color_queda}; font-size:0.9rem; font-weight:700;">✨ QUEDA</h4><h2 style="color:#1E293B; font-size:1.5rem; font-weight:800; margin:4px 0;">{formato_COP(quincena_que_queda)}</h2></div>', unsafe_allow_html=True)
 
 total_deuda_periodo = sum(item["valor"] for item in st.session_state.obligaciones_base if item["periodo"] == periodo_filtro)
 porcentaje_periodo = int((total_pagado_obligaciones_actual / total_deuda_periodo) * 100) if total_deuda_periodo > 0 else 0
@@ -264,17 +268,19 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
-# CUADRO ROSADO MÁS OSCURO PARA EL TOTAL GLOBAL Y AVANCE TOTAL
+# CUADRO ROSADO OSCURO FIJO ARRIBA CON TOTALES GLOBALES Y NÚMEROS BLANCOS GRANDES
 total_deuda_global = sum(item["valor"] * item["total"] if "total" in item else item["valor"] for item in st.session_state.obligaciones_base)
 total_pagado_global = sum(item["valor"] * item["pagadas"] if "total" in item else (item["valor"] if item.get("pagadas", False) else 0) for item in st.session_state.obligaciones_base)
 porcentaje_global = int((total_pagado_global / total_deuda_global) * 100) if total_deuda_global > 0 else 0
 
 st.markdown(f"""
 <div class="global-dark-card">
-    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 2px;">👑 Resumen Global Histórico de Todas tus Deudas</div>
-    <div style="font-size: 0.95rem;"><b>Total Deuda:</b> {formato_COP(total_deuda_global)} | <b>Pagado:</b> {formato_COP(total_pagado_global)} ({porcentaje_global}%)</div>
-    <div style="background-color: rgba(255,255,255,0.3); border-radius: 10px; height: 10px; margin-top: 6px; overflow: hidden;">
-        <div style="background-color: #FFFFFF; height: 100%; width: {porcentaje_global}%;"></div>
+    <div style="font-size: 1.1rem; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px;">👑 RESUMEN GLOBAL HISTÓRICO DE TODAS TUS DEUDAS</div>
+    <div style="font-size: 1.3rem; font-weight: 800; margin: 4px 0;">
+        Total Deudas: <span style="color: #FFFFFF;">{formato_COP(total_deuda_global)}</span> | Avance Total: <span style="color: #FDE047;">{porcentaje_global}%</span> ({formato_COP(total_pagado_global)})
+    </div>
+    <div style="background-color: rgba(255,255,255,0.3); border-radius: 10px; height: 12px; margin-top: 8px; overflow: hidden;">
+        <div style="background-color: #FFFFFF; height: 100%; width: {porcentaje_global}%; border-radius: 10px;"></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
