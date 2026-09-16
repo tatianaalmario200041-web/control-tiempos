@@ -356,7 +356,7 @@ st.markdown("### 📋 Gestión de Nuevas Deudas y Cuentas por Cobrar")
 tab_deudas, tab_prestamos = st.tabs(["💸 Registrar / Ver Nuevas Deudas", "🤝 Dinero que Te Deben"])
 
 with tab_deudas:
-    st.markdown("#### Agrega un nuevo crédito o cuota (¡Se sumará a los cuadros rosados oscuros superiores automáticamente!):")
+    st.markdown("#### Agrega un nuevo crédito o cuota (¡Se creará exactamente igual de hermosa que las demás!):")
     with st.form(key="form_nueva_deuda_main"):
         col_nd1, col_nd2 = st.columns(2)
         with col_nd1:
@@ -366,7 +366,7 @@ with tab_deudas:
             n_total_cuotas = st.number_input("Número Total de Cuotas", min_value=1, value=1, step=1)
             n_periodo = st.selectbox("¿A qué quincena pertenece?", ["Mitad de Mes", "Fin de Mes"])
         
-        n_fecha_pago = st.text_input("Fecha estimada de pago (Ej: 28 de cada mes)")
+        n_fecha_pago = st.text_input("Fecha estimada de pago (Ej: Semanal todos los martes)")
         btn_guardar_deuda = st.form_submit_button("💖 Guardar Nueva Deuda en el Sistema")
         
         if btn_guardar_deuda and n_nombre and n_valor_cuota > 0:
