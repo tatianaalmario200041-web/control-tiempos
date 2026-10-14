@@ -30,7 +30,7 @@ if "planta_activa" not in st.session_state:
 
 planta_seleccionada = st.session_state["planta_activa"]
 
-# Definición de Colores Dinámicos por Planta
+# Definición de Colores Dinámicos por Planta (Tus colores originales intactos)
 if planta_seleccionada == "Metalmecánica":
     COLOR_ACCENT = "#0284c7"
     COLOR_BADGE_BG = "#f0f9ff"
@@ -50,10 +50,10 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS de Alta Precision - Alineación Total de Altura
+# Estilos CSS con Números Finos, Esbeltos y Altura Perfecta
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {{
         font-family: 'Plus Jakarta Sans', sans-serif;
@@ -191,25 +191,28 @@ st.markdown(f"""
         gap: 6px;
     }}
 
+    /* NÚMEROS FINOS, ESTILIZADOS Y ELEGANTES */
     .digits-compact {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 26px;
-        font-weight: 800;
+        font-size: 25px;
+        font-weight: 500;
         color: #0f172a;
         line-height: 1;
+        letter-spacing: -0.5px;
     }}
 
     .digits-compact-active {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 26px;
-        font-weight: 800;
+        font-size: 25px;
+        font-weight: 500;
         color: {COLOR_RUNNING_TEXT};
         line-height: 1;
+        letter-spacing: -0.5px;
     }}
 
     .unit-compact {{
         font-size: 10px;
-        font-weight: 700;
+        font-weight: 600;
         color: #64748b;
     }}
 
@@ -533,7 +536,7 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
         digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
-        # Grid calibrado: Módulo de tiempo + Botón Iniciar (Ancho y Alto parejo) + Botón Reiniciar
+        # Grid calibrado: Módulo de tiempo + Botón Iniciar + Botón Reiniciar limpio
         c_digits, c_btn_play, c_btn_rst = st.columns([2.5, 1.2, 0.4])
         
         with c_digits:
