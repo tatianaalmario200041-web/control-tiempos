@@ -50,7 +50,7 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS Nivel Dios - Tarjetas Unificadas sin Elementos Sueltos
+# Estilos CSS de Alta Precision - Alineación Total de Altura
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -131,36 +131,42 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    /* ESTRUCTURA FUSIÓN INTEGRADORA PARA CRONÓMETROS */
-    .timer-card-fusion {{
+    /* TARJETAS Y ALINEACIÓN DE ALTURA TOTAL */
+    .timer-card-perfect {{
         background: #ffffff;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #cbd5e1;
         border-radius: 8px;
-        padding: 8px 12px;
-        margin-bottom: 10px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        padding: 8px 14px;
+        height: 62px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }}
 
-    .timer-card-fusion-active {{
+    .timer-card-perfect-active {{
         background: #ffffff;
-        border: 1.5px solid {COLOR_ACCENT};
+        border: 2px solid {COLOR_ACCENT};
         border-radius: 8px;
-        padding: 8px 12px;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        padding: 8px 14px;
+        height: 62px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     }}
 
     .timer-top-line {{
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }}
 
     .timer-title-text {{
         font-size: 10px;
         font-weight: 800;
-        color: #64748b;
+        color: #475569;
         text-transform: uppercase;
         letter-spacing: 0.4px;
     }}
@@ -187,45 +193,59 @@ st.markdown(f"""
 
     .digits-compact {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 24px;
-        font-weight: 700;
-        color: #1e293b;
+        font-size: 26px;
+        font-weight: 800;
+        color: #0f172a;
         line-height: 1;
     }}
 
     .digits-compact-active {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 24px;
-        font-weight: 700;
+        font-size: 26px;
+        font-weight: 800;
         color: {COLOR_RUNNING_TEXT};
         line-height: 1;
     }}
 
     .unit-compact {{
         font-size: 10px;
-        font-weight: 600;
-        color: #94a3b8;
+        font-weight: 700;
+        color: #64748b;
     }}
 
-    /* AJUSTE DE MICRO-BOTONES DENTRO DEL LAYOUT */
-    div[data-testid="stColumn"] .stButton > button {{
-        border-radius: 5px !important;
-        font-size: 10px !important;
-        font-weight: 700 !important;
-        padding: 2px 6px !important;
-        min-height: 28px !important;
-        height: 28px !important;
+    /* REGLA MAESTRA: BOTONES CON ALTURA Y MARGEN EMPATADO */
+    div[data-testid="column"] .stButton {{
+        margin-top: 0px !important;
+        margin-bottom: 0px !important;
+    }}
+
+    div[data-testid="column"] .stButton > button {{
+        border-radius: 8px !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.5px !important;
+        height: 62px !important;
+        padding: 0px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    }}
+
+    /* Separación entre filas de cronómetros */
+    .row-spacer {{
+        margin-bottom: 10px;
     }}
 
     .section-header {{
         background-color: {COLOR_HEADER_BG};
         border-left: 3px solid {COLOR_HEADER_BORDER};
-        padding: 5px 10px;
+        padding: 6px 12px;
         font-size: 11px;
         font-weight: 800;
         color: {COLOR_HEADER_TEXT};
         border-radius: 0 4px 4px 0;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         text-transform: uppercase;
         letter-spacing: 0.4px;
     }}
@@ -233,12 +253,12 @@ st.markdown(f"""
     .section-header-red {{
         background-color: #fef2f2;
         border-left: 3px solid #ef4444;
-        padding: 5px 10px;
+        padding: 6px 12px;
         font-size: 11px;
         font-weight: 800;
         color: #991b1b;
         border-radius: 0 4px 4px 0;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         text-transform: uppercase;
         letter-spacing: 0.4px;
     }}
@@ -492,7 +512,7 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (CONTENEDOR FUSIÓN NIVEL DIOS)
+# 4. CRONOMETRAJE EN VIVO (ALINEACIÓN DE ALTURA PERFECTA)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
@@ -508,14 +528,15 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         minutos = int(tiempo_actual // 60)
         segundos = int(tiempo_actual % 60)
         
-        card_class = "timer-card-fusion-active" if esta_corriendo else "timer-card-fusion"
+        card_class = "timer-card-perfect-active" if esta_corriendo else "timer-card-perfect"
         pill_class = "pill-active" if esta_corriendo else "pill-idle"
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
         digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
-        col_digits, col_btn_play, col_btn_rst = st.columns([2.6, 1.2, 0.4])
+        # Grid calibrado: Módulo de tiempo + Botón Iniciar (Ancho y Alto parejo) + Botón Reiniciar
+        c_digits, c_btn_play, c_btn_rst = st.columns([2.5, 1.2, 0.4])
         
-        with col_digits:
+        with c_digits:
             st.markdown(f'''
                 <div class="{card_class}">
                     <div class="timer-top-line">
@@ -529,8 +550,7 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                 </div>
             ''', unsafe_allow_html=True)
 
-        with col_btn_play:
-            st.write("") 
+        with c_btn_play:
             label_btn = "PAUSAR" if esta_corriendo else "INICIAR"
             tipo_btn = "primary" if not esta_corriendo else "secondary"
             
@@ -544,14 +564,15 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                     st.session_state[f"corriendo_{clave}"] = True
                 st.rerun()
 
-        with col_btn_rst:
-            st.write("") 
+        with c_btn_rst:
             if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
                 st.session_state[f"inicio_{clave}"] = None
                 st.rerun()
                 
+        # Separador visual entre filas
+        st.markdown('<div class="row-spacer"></div>', unsafe_allow_html=True)
         return round(tiempo_actual / 60.0, 2)
 
     col_left, col_right = st.columns(2)
