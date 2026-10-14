@@ -24,7 +24,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS Nivel Ingeniería
+# Inicializar Estado de Planta en Session State
+if "planta_activa" not in st.session_state:
+    st.session_state["planta_activa"] = "Metalmecánica"
+
+# Estilos CSS Nivel Ingeniería - Reducción de Espacios + Modernización UI
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -33,34 +37,83 @@ st.markdown("""
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
     
-    [data-testid="stElementToolbar"] {
+    /* 1. ELIMINAR ESPACIO EN BLANCO SUPERIOR DE STREAMLIT */
+    [data-testid="stHeader"] {
         display: none !important;
     }
     
-    .header-container {
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 100% !important;
+    }
+
+    [data-testid="stElementToolbar"] {
+        display: none !important;
+    }
+
+    /* 2. HEADER Y BARRA DE SELECCIÓN UNIFICADA */
+    .top-bar-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        padding: 16px 20px;
+        padding: 12px 20px;
         border-radius: 10px;
         color: white;
         margin-bottom: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
-    
+
     .main-title {
         color: #ffffff;
-        font-size: 20px;
+        font-size: 19px;
         font-weight: 800;
         letter-spacing: -0.3px;
         margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
-    
+
     .sub-title {
         color: #94a3b8;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 500;
         margin-top: 2px;
     }
-    
+
+    .badge-metal {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .badge-maderas {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    /* Estilos para Botones de Switcher de Planta */
+    div[data-testid="stHorizontalBlock"] .stButton > button {
+        border-radius: 8px !important;
+        font-weight: 800 !important;
+        font-size: 12px !important;
+        height: 38px !important;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    /* Cards de Cronómetro */
     .timer-card {
         background: #ffffff;
         border: 1px solid #cbd5e1;
@@ -124,17 +177,10 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    div.stButton > button {
-        border-radius: 6px !important;
-        font-weight: 700 !important;
-        font-size: 13px !important;
-        height: 40px !important;
-    }
-
     .footer-credits {
         text-align: center;
-        padding: 15px;
-        margin-top: 25px;
+        padding: 12px;
+        margin-top: 20px;
         background: #f8fafc;
         border-top: 1px solid #e2e8f0;
         border-radius: 6px;
@@ -151,28 +197,35 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 1. SELECTOR SUPERIOR DE PLANTA Y CONFIGURACIÓN DINÁMICA
+# 1. HEADER COMPACTO Y SELECTOR DE PLANTA
 # ---------------------------------------------------------
-col_top_header, col_top_select = st.columns([2, 1])
+col_head, col_sw1, col_sw2 = st.columns([2.5, 1, 1])
 
-with col_top_select:
-    planta_seleccionada = st.selectbox(
-        "🏭 SELECCIONAR PLANTA DE OPERACIÓN",
-        ["PLANTA METALMECÁNICA", "PLANTA DE MADERAS"],
-        index=0,
-        help="Al cambiar la planta se actualizarán automáticamente las máquinas, materiales, espesores y motivos de paro."
-    )
+planta_seleccionada = st.session_state["planta_activa"]
 
-with col_top_header:
+with col_sw1:
+    if st.button("⚙️ PLANTA METALMECÁNICA", use_container_width=True, type="primary" if planta_seleccionada == "Metalmecánica" else "secondary"):
+        st.session_state["planta_activa"] = "Metalmecánica"
+        st.rerun()
+
+with col_sw2:
+    if st.button("🪵 PLANTA DE MADERAS", use_container_width=True, type="primary" if planta_seleccionada == "Maderas" else "secondary"):
+        st.session_state["planta_activa"] = "Maderas"
+        st.rerun()
+
+with col_head:
+    badge_html = f'<span class="badge-metal">⚙️ METALMECÁNICA</span>' if planta_seleccionada == "Metalmecánica" else f'<span class="badge-maderas">🪵 MADERAS</span>'
     st.markdown(f"""
-        <div class="header-container">
-            <div class="main-title">⏱️ CONTROL DE TIEMPOS Y MÉTODOS DE PRODUCCIÓN</div>
-            <div class="sub-title">Captura en Vivo y Muestreo Estándar | {planta_seleccionada}</div>
+        <div class="top-bar-container">
+            <div>
+                <div class="main-title">⏱️ CONTROL DE TIEMPOS Y MÉTODOS {badge_html}</div>
+                <div class="sub-title">Captura en Vivo y Muestreo Estándar de Producción</div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
-# Definición de Archivos por Planta
-if planta_seleccionada == "PLANTA METALMECÁNICA":
+# Asignar Parámetros según la Planta Activa
+if planta_seleccionada == "Metalmecánica":
     ARCHIVO_EXCEL = "Registro_Produccion_Metalmecanica.xlsx"
     ARCHIVO_OPERARIOS = "Lista_Operarios_Metalmecanica.json"
     
@@ -221,8 +274,7 @@ if planta_seleccionada == "PLANTA METALMECÁNICA":
         "Operario en máquina sin producción (Ociosidad / Espera)",
         "Otro / Imprevisto"
     ]
-
-else:  # PLANTA DE MADERAS
+else:
     ARCHIVO_EXCEL = "Registro_Produccion_Maderas.xlsx"
     ARCHIVO_OPERARIOS = "Lista_Operarios_Maderas.json"
     
@@ -302,7 +354,6 @@ def guardar_operarios(lista_operarios):
     with open(ARCHIVO_OPERARIOS, "w", encoding="utf-8") as f:
         json.dump(sorted(list(set(lista_operarios))), f, ensure_ascii=False, indent=4)
 
-# Actualizar lista de operarios asociada a la planta seleccionada
 st.session_state["lista_operarios"] = cargar_operarios()
 
 cronometros = ["Setup", "Ciclo Real", "Descargue", "Paros", "Espera Operario"]
@@ -324,7 +375,7 @@ def resetear_cronometros():
 # ---------------------------------------------------------
 # 3. FORMULARIO DE ORDEN DE TRABAJO (OP)
 # ---------------------------------------------------------
-with st.expander(f"📌 DATOS DE LA ORDEN DE TRABAJO (OP) - {planta_seleccionada}", expanded=True):
+with st.expander(f"📌 DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_seleccionada.upper()}", expanded=True):
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -357,7 +408,7 @@ with st.expander(f"📌 DATOS DE LA ORDEN DE TRABAJO (OP) - {planta_seleccionada
     
     with col2:
         maquina = st.selectbox("Máquina / Estación", MAQUINAS_LIST)
-        nombre_general = st.text_input("Proyecto / Producto", placeholder="Ej: Estantería Modulo B")
+        nombre_general = st.text_input("Proyecto / Producto", placeholder="Ej: Estantería Módulo B")
         detalle_pieza = st.text_input("Detalle Pieza / Nesting", placeholder="Ej: Lateral Izquierdo 18mm")
         material = st.selectbox("Material", MATERIALES_LIST)
 
@@ -442,7 +493,7 @@ st.markdown("---")
 # ---------------------------------------------------------
 # 5. GUARDADO DE REGISTRO EN EXCEL
 # ---------------------------------------------------------
-if st.button(f"💾 GUARDAR REGISTRO EN EXCEL ({planta_seleccionada})", use_container_width=True, type="primary"):
+if st.button(f"💾 GUARDAR REGISTRO EN EXCEL (PLANTA {planta_seleccionada.upper()})", use_container_width=True, type="primary"):
     if not orden or not maquina:
         st.error("⚠️ Ingrese la 'Orden / OP' y seleccione la 'Máquina' para guardar.")
     elif not operario:
@@ -496,7 +547,7 @@ if st.button(f"💾 GUARDAR REGISTRO EN EXCEL ({planta_seleccionada})", use_cont
         df_final = df_final.dropna(subset=["Orden"])
         df_final.to_excel(ARCHIVO_EXCEL, index=False)
         
-        st.success(f"✅ ¡Registro de la Orden {orden} en {planta_seleccionada} guardado con éxito!")
+        st.success(f"✅ ¡Registro de la Orden {orden} en Planta {planta_seleccionada} guardado con éxito!")
 
         tiempo_total = float(t_setup) + float(t_ciclo) + float(t_descargue) + float(t_espera) + float(t_paros)
         tiempo_productivo = float(t_ciclo)
@@ -517,9 +568,9 @@ if st.button(f"💾 GUARDAR REGISTRO EN EXCEL ({planta_seleccionada})", use_cont
         st.rerun()
 
 # ---------------------------------------------------------
-# 6. HISTORIAL Y EXPORTACIÓN POR PLANTA
+# 6. HISTORIAL Y EXPORTACIÓN
 # ---------------------------------------------------------
-st.markdown(f'<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS - {planta_seleccionada}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS - PLANTA {planta_seleccionada.upper()}</div>', unsafe_allow_html=True)
 
 if os.path.exists(ARCHIVO_EXCEL):
     df_ver = pd.read_excel(ARCHIVO_EXCEL)
@@ -551,7 +602,7 @@ if os.path.exists(ARCHIVO_EXCEL):
             nombre_archivo_descarga = f"Registro_{planta_seleccionada.replace(' ', '_')}_{datetime.date.today()}.xlsx"
             
             descargado = st.download_button(
-                label=f"📥 DESCARGAR MATRIZ {planta_seleccionada}",
+                label=f"📥 DESCARGAR MATRIZ {planta_seleccionada.upper()}",
                 data=buffer,
                 file_name=nombre_archivo_descarga,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -562,7 +613,7 @@ if os.path.exists(ARCHIVO_EXCEL):
             if descargado and borrar_tras_descarga:
                 if os.path.exists(ARCHIVO_EXCEL):
                     os.remove(ARCHIVO_EXCEL)
-                st.success(f"🧹 Historial de {planta_seleccionada} borrado correctamente.")
+                st.success(f"🧹 Historial de Planta {planta_seleccionada} borrado correctamente.")
                 time.sleep(1)
                 st.rerun()
 
@@ -572,7 +623,7 @@ if os.path.exists(ARCHIVO_EXCEL):
             st.warning("🔑 Ingresa la contraseña autorizada para habilitar la descarga.")
 
 else:
-    st.info(f"Aún no hay registros consolidados para {planta_seleccionada}.")
+    st.info(f"Aún no hay registros consolidados para Planta {planta_seleccionada}.")
 
 # Pie de página
 st.markdown("""
@@ -581,7 +632,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Refresco dinámico
+# Bucle de refresco
 if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
     time.sleep(1)
     st.rerun()
