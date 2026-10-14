@@ -30,7 +30,7 @@ if "planta_activa" not in st.session_state:
 
 planta_seleccionada = st.session_state["planta_activa"]
 
-# Definición de Colores Dinámicos por Planta
+# Definición de Colores Dinámicos por Planta (Restaurados y Perfectos)
 if planta_seleccionada == "Metalmecánica":
     COLOR_ACCENT = "#0284c7"
     COLOR_BADGE_BG = "#f0f9ff"
@@ -50,17 +50,16 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS Limpios y Profesionales
+# Estilos CSS con Tipografía Fina, Esbelta y Elegante
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
     
     html, body, [class*="css"] {{
-        font-family: 'Inter', sans-serif;
+        font-family: 'Plus Jakarta Sans', sans-serif;
         color: #334155;
     }}
     
-    /* Eliminar espacio superior nativo de Streamlit */
     [data-testid="stHeader"] {{
         display: none !important;
     }}
@@ -115,13 +114,13 @@ st.markdown(f"""
         letter-spacing: 0.5px;
     }}
 
-    /* TARJETAS DE TIEMPO INTEGRADAS */
+    /* TARJETAS DE CRONÓMETRO - NÚMEROS FINOS Y PROPORCIONADOS */
     .timer-card-perfect {{
         background: #ffffff;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
-        padding: 10px 14px;
-        height: 64px;
+        padding: 8px 14px;
+        height: 60px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -132,8 +131,8 @@ st.markdown(f"""
         background: #ffffff;
         border: 2px solid {COLOR_ACCENT};
         border-radius: 8px;
-        padding: 10px 14px;
-        height: 64px;
+        padding: 8px 14px;
+        height: 60px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -172,22 +171,23 @@ st.markdown(f"""
     .display-row {{
         display: flex;
         align-items: baseline;
-        justify-content: space-between;
+        gap: 4px;
     }}
 
+    /* Estilo de dígitos nítido, delgado y elegante (JetBrains Mono Proporcional) */
     .digits-compact {{
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 26px;
-        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 24px;
+        font-weight: 600;
         color: #0f172a;
         line-height: 1;
         letter-spacing: -0.5px;
     }}
 
     .digits-compact-active {{
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 26px;
-        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 24px;
+        font-weight: 600;
         color: {COLOR_RUNNING_TEXT};
         line-height: 1;
         letter-spacing: -0.5px;
@@ -195,17 +195,18 @@ st.markdown(f"""
 
     .unit-compact {{
         font-size: 10px;
-        font-weight: 700;
+        font-weight: 500;
         color: #64748b;
     }}
 
-    .prev-val-text {{
+    .prev-val-badge {{
         font-size: 9px;
         font-weight: 600;
         color: #475569;
         background: #f1f5f9;
-        padding: 2px 6px;
+        padding: 1px 5px;
         border-radius: 4px;
+        margin-left: auto;
         border: 1px solid #e2e8f0;
     }}
 
@@ -220,7 +221,7 @@ st.markdown(f"""
         font-size: 11px !important;
         font-weight: 800 !important;
         letter-spacing: 0.5px !important;
-        height: 64px !important;
+        height: 60px !important;
         padding: 0px !important;
         display: flex !important;
         align-items: center !important;
@@ -229,7 +230,7 @@ st.markdown(f"""
     }}
 
     .row-spacer {{
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }}
 
     .section-header {{
@@ -510,7 +511,7 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (TARJETAS 100% LIMPIAS SIN DIVS SUELTOS)
+# 4. CRONOMETRAJE EN VIVO (SEGURO, LIMPIO Y SIN ERRORES)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
@@ -532,18 +533,16 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
         digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
-        # Formato de valor previo limpio
+        # Respaldo seguro del valor previo (sin romper HTML)
+        badge_html = ""
         if valor_previo is not None and valor_previo > 0:
             m_prev = int(valor_previo // 60)
             s_prev = int(valor_previo % 60)
-            prev_txt = f"Último: {m_prev:02d}:{s_prev:02d}"
-        else:
-            prev_txt = ""
+            badge_html = f'<span class="prev-val-badge">Último: {m_prev:02d}:{s_prev:02d}</span>'
 
         c_digits, c_btn_play, c_btn_rst = st.columns([2.5, 1.2, 0.4])
         
         with c_digits:
-            prev_block = f'<span class="prev-val-text">{prev_txt}</span>' if prev_txt else ''
             st.markdown(f'''
                 <div class="{card_class}">
                     <div class="timer-top-line">
@@ -551,11 +550,9 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                         <span class="{pill_class}">{pill_text}</span>
                     </div>
                     <div class="display-row">
-                        <div>
-                            <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
-                            <span class="unit-compact">min</span>
-                        </div>
-                        {prev_block}
+                        <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
+                        <span class="unit-compact">min</span>
+                        {badge_html}
                     </div>
                 </div>
             ''', unsafe_allow_html=True)
@@ -580,7 +577,7 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
                 st.session_state[f"inicio_{clave}"] = None
-                st.toast(f"Respaldo guardado para {nombre}")
+                st.toast(f"Cronómetro {nombre} reiniciado. Respaldo guardado.")
                 st.rerun()
                 
         st.markdown('<div class="row-spacer"></div>', unsafe_allow_html=True)
@@ -739,7 +736,7 @@ if os.path.exists(ARCHIVO_EXCEL):
 else:
     st.info(f"Aún no hay registros consolidados para Planta {planta_seleccionada}.")
 
-# Pie de página
+# Pie de página actualizado
 st.markdown("""
     <div class="footer-credits">
         Desarrollado por <span>Tatiana Almario • Asistente de Costos</span>
