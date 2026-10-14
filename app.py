@@ -28,42 +28,72 @@ st.set_page_config(
 if "planta_activa" not in st.session_state:
     st.session_state["planta_activa"] = "Metalmecánica"
 
-# Estilos CSS Nivel Corporativo - Paleta Naranja Industrial y Cero Emojis
-st.markdown("""
+planta_seleccionada = st.session_state["planta_activa"]
+
+# Definición de Colores Dinámicos por Planta
+if planta_seleccionada == "Metalmecánica":
+    COLOR_BORDER = "#0284c7"
+    COLOR_BADGE_BG = "rgba(56, 189, 248, 0.18)"
+    COLOR_BADGE_TEXT = "#38bdf8"
+    COLOR_BADGE_BORDER = "rgba(56, 189, 248, 0.4)"
+    COLOR_RUNNING_BG = "#f0f9ff"
+    COLOR_RUNNING_BORDER = "#0284c7"
+    COLOR_RUNNING_SHADOW = "rgba(2, 132, 199, 0.15)"
+    COLOR_HEADER_BG = "#f0f9ff"
+    COLOR_HEADER_BORDER = "#0284c7"
+    COLOR_HEADER_TEXT = "#0369a1"
+    COLOR_PRIMARY_BTN = "#0284c7"
+    COLOR_PRIMARY_HOVER = "#0369a1"
+else:  # Maderas
+    COLOR_BORDER = "#ea580c"
+    COLOR_BADGE_BG = "rgba(249, 115, 22, 0.18)"
+    COLOR_BADGE_TEXT = "#f97316"
+    COLOR_BADGE_BORDER = "rgba(249, 115, 22, 0.4)"
+    COLOR_RUNNING_BG = "#fff7ed"
+    COLOR_RUNNING_BORDER = "#f97316"
+    COLOR_RUNNING_SHADOW = "rgba(249, 115, 22, 0.15)"
+    COLOR_HEADER_BG = "#fff7ed"
+    COLOR_HEADER_BORDER = "#ea580c"
+    COLOR_HEADER_TEXT = "#9a3412"
+    COLOR_PRIMARY_BTN = "#ea580c"
+    COLOR_PRIMARY_HOVER = "#c2410c"
+
+# Estilos CSS Nivel Corporativo Dinámicos
+st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
     
-    html, body, [class*="css"] {
+    html, body, [class*="css"] {{
         font-family: 'Plus Jakarta Sans', sans-serif;
-    }
+    }}
     
     /* Eliminar espacio superior nativo de Streamlit */
-    [data-testid="stHeader"] {
+    [data-testid="stHeader"] {{
         display: none !important;
-    }
+    }}
     
-    .block-container {
+    .block-container {{
         padding-top: 1rem !important;
         padding-bottom: 2rem !important;
         max-width: 100% !important;
-    }
+    }}
 
-    [data-testid="stElementToolbar"] {
+    [data-testid="stElementToolbar"] {{
         display: none !important;
-    }
+    }}
 
-    /* Barra Superior Unificada Naranja */
-    .top-bar-container {
+    /* Barra Superior Unificada */
+    .top-bar-container {{
         background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
-        border-left: 5px solid #f97316;
+        border-left: 5px solid {COLOR_BORDER};
         padding: 12px 20px;
         border-radius: 8px;
         color: white;
         margin-bottom: 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
+    }}
 
-    .main-title {
+    .main-title {{
         color: #ffffff;
         font-size: 18px;
         font-weight: 800;
@@ -73,103 +103,103 @@ st.markdown("""
         align-items: center;
         gap: 12px;
         text-transform: uppercase;
-    }
+    }}
 
-    .sub-title {
+    .sub-title {{
         color: #a8a29e;
         font-size: 11px;
         font-weight: 500;
         margin-top: 3px;
-    }
+    }}
 
-    .badge-plant {
-        background: rgba(249, 115, 22, 0.18);
-        color: #f97316;
-        border: 1px solid rgba(249, 115, 22, 0.4);
+    .badge-plant {{
+        background: {COLOR_BADGE_BG};
+        color: {COLOR_BADGE_TEXT};
+        border: 1px solid {COLOR_BADGE_BORDER};
         padding: 3px 10px;
         border-radius: 4px;
         font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.5px;
-    }
+    }}
 
     /* Botones de Selección de Planta */
-    div[data-testid="stHorizontalBlock"] .stButton > button {
+    div[data-testid="stHorizontalBlock"] .stButton > button {{
         border-radius: 6px !important;
         font-weight: 800 !important;
         font-size: 12px !important;
         height: 42px !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-    }
+    }}
 
-    /* Estilos Primarios en Naranja */
-    button[kind="primary"] {
-        background-color: #ea580c !important;
-        border-color: #ea580c !important;
+    /* Estilos Primarios Dinámicos */
+    button[kind="primary"] {{
+        background-color: {COLOR_PRIMARY_BTN} !important;
+        border-color: {COLOR_PRIMARY_BTN} !important;
         color: #ffffff !important;
-    }
+    }}
     
-    button[kind="primary"]:hover {
-        background-color: #c2410c !important;
-        border-color: #c2410c !important;
-    }
+    button[kind="primary"]:hover {{
+        background-color: {COLOR_PRIMARY_HOVER} !important;
+        border-color: {COLOR_PRIMARY_HOVER} !important;
+    }}
 
     /* Cards de Cronómetro */
-    .timer-card {
+    .timer-card {{
         background: #ffffff;
         border: 1px solid #e7e5e4;
         border-radius: 8px;
         padding: 12px;
         margin-bottom: 10px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
+    }}
     
-    .timer-card-running {
-        background: #fff7ed;
-        border: 2px solid #f97316;
+    .timer-card-running {{
+        background: {COLOR_RUNNING_BG};
+        border: 2px solid {COLOR_RUNNING_BORDER};
         border-radius: 8px;
         padding: 12px;
         margin-bottom: 10px;
-        box-shadow: 0 4px 10px rgba(249, 115, 22, 0.15);
-    }
+        box-shadow: 0 4px 10px {COLOR_RUNNING_SHADOW};
+    }}
 
-    .timer-label {
+    .timer-label {{
         font-size: 11px;
         font-weight: 800;
         color: #57534e;
         text-transform: uppercase;
         letter-spacing: 0.3px;
-    }
+    }}
     
-    .timer-digits {
+    .timer-digits {{
         font-family: 'JetBrains Mono', monospace;
         font-size: 28px;
         font-weight: 800;
         color: #1c1917;
         margin: 2px 0 6px 0;
-    }
+    }}
     
-    .timer-unit {
+    .timer-unit {{
         font-size: 12px;
         font-weight: 600;
         color: #78716c;
-    }
+    }}
 
-    .section-header {
-        background-color: #fff7ed;
-        border-left: 4px solid #ea580c;
+    .section-header {{
+        background-color: {COLOR_HEADER_BG};
+        border-left: 4px solid {COLOR_HEADER_BORDER};
         padding: 6px 12px;
         font-size: 11px;
         font-weight: 800;
-        color: #9a3412;
+        color: {COLOR_HEADER_TEXT};
         border-radius: 0 4px 4px 0;
         margin-bottom: 12px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-    }
+    }}
     
-    .section-header-red {
+    .section-header-red {{
         background-color: #fef2f2;
         border-left: 4px solid #dc2626;
         padding: 6px 12px;
@@ -180,9 +210,9 @@ st.markdown("""
         margin-bottom: 12px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-    }
+    }}
 
-    .footer-credits {
+    .footer-credits {{
         text-align: center;
         padding: 12px;
         margin-top: 20px;
@@ -194,12 +224,12 @@ st.markdown("""
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.3px;
-    }
+    }}
     
-    .footer-credits span {
-        color: #ea580c;
+    .footer-credits span {{
+        color: {COLOR_PRIMARY_BTN};
         font-weight: 800;
-    }
+    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -207,8 +237,6 @@ st.markdown("""
 # 1. HEADER COMPACTO Y SELECTOR DE PLANTA
 # ---------------------------------------------------------
 col_head, col_sw1, col_sw2 = st.columns([2.4, 1, 1])
-
-planta_seleccionada = st.session_state["planta_activa"]
 
 with col_sw1:
     if st.button("PLANTA METALMECÁNICA", use_container_width=True, type="primary" if planta_seleccionada == "Metalmecánica" else "secondary"):
