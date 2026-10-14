@@ -18,7 +18,7 @@ def obtener_fecha_bogota():
 
 # Configuración de Página
 st.set_page_config(
-    page_title="Control de Tiempos & Métodos | Planta",
+    page_title="Control de Tiempos & Métodos | Planta Multi-Proceso",
     page_icon="⏱️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -33,12 +33,10 @@ st.markdown("""
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
     
-    /* Ocultar toolbar nativo de tablas */
     [data-testid="stElementToolbar"] {
         display: none !important;
     }
     
-    /* Header principal */
     .header-container {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         padding: 16px 20px;
@@ -63,7 +61,6 @@ st.markdown("""
         margin-top: 2px;
     }
     
-    /* Cards de Cronómetro */
     .timer-card {
         background: #ffffff;
         border: 1px solid #cbd5e1;
@@ -153,22 +150,132 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Encabezado
-st.markdown("""
-    <div class="header-container">
-        <div class="main-title">⏱️ CONTROL DE TIEMPOS Y MÉTODOS DE PRODUCCIÓN</div>
-        <div class="sub-title">Captura en Vivo y Muestreo Estándar en Planta</div>
-    </div>
-""", unsafe_allow_html=True)
+# ---------------------------------------------------------
+# 1. SELECTOR SUPERIOR DE PLANTA Y CONFIGURACIÓN DINÁMICA
+# ---------------------------------------------------------
+col_top_header, col_top_select = st.columns([2, 1])
 
-ARCHIVO_EXCEL = "Registro_Produccion.xlsx"
-ARCHIVO_OPERARIOS = "Lista_Operarios.json"
+with col_top_select:
+    planta_seleccionada = st.selectbox(
+        "🏭 SELECCIONAR PLANTA DE OPERACIÓN",
+        ["PLANTA METALMECÁNICA", "PLANTA DE MADERAS"],
+        index=0,
+        help="Al cambiar la planta se actualizarán automáticamente las máquinas, materiales, espesores y motivos de paro."
+    )
 
-# Inicializar Hora de Inicio de Captura
+with col_top_header:
+    st.markdown(f"""
+        <div class="header-container">
+            <div class="main-title">⏱️ CONTROL DE TIEMPOS Y MÉTODOS DE PRODUCCIÓN</div>
+            <div class="sub-title">Captura en Vivo y Muestreo Estándar | {planta_seleccionada}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# Definición de Archivos por Planta
+if planta_seleccionada == "PLANTA METALMECÁNICA":
+    ARCHIVO_EXCEL = "Registro_Produccion_Metalmecanica.xlsx"
+    ARCHIVO_OPERARIOS = "Lista_Operarios_Metalmecanica.json"
+    
+    MAQUINAS_LIST = [
+        "Punzonadora Trumpf Trumatic 2000R",
+        "Cortadora Láser CNC (MT 36) - F 3015",
+        "Plegadora Durma CNC",
+        "Dobladora Dener",
+        "Soldadura MIG",
+        "Soldadura PUNTO",
+        "Horno Pintura",
+        "Soldadura LASER",
+        "Otra Máquina"
+    ]
+    MATERIALES_LIST = [
+        "CR (Cold Rolled)",
+        "HR (Hot Rolled)",
+        "Acero Inoxidable",
+        "Aluminio",
+        "Lámina Galvanizada",
+        "Otro Material"
+    ]
+    CALIBRES_LIST = [
+        "0.8 mm (C22)",
+        "0.9 mm (C20)", 
+        "1.2 mm (C18)", 
+        "1.5 mm (C16)", 
+        "1.9 mm (C14)", 
+        "2.5 mm (C12)", 
+        "3.0 mm (1/8\")", 
+        "4.5 mm (3/16\")", 
+        "6.0 mm (1/4\")",
+        "✍️ OTRO / LIBRE (Escribir en vivo)"
+    ]
+    MOTIVOS_PARO_LIST = [
+        "Ninguno / Operación Normal",
+        "Falta de material / Materia prima",
+        "Cambio de herramienta / Setup",
+        "Mantenimiento autónomo / Limpieza",
+        "Falta de programa NC / Ingeniería",
+        "Ajuste de holgura / Calidad",
+        "Falta de energía / Aire comprimido",
+        "Cambio de boquilla / Consumibles",
+        "Alerta / Paro de emergencia de máquina",
+        "Descanso / Almuerzo operador",
+        "Operario en máquina sin producción (Ociosidad / Espera)",
+        "Otro / Imprevisto"
+    ]
+
+else:  # PLANTA DE MADERAS
+    ARCHIVO_EXCEL = "Registro_Produccion_Maderas.xlsx"
+    ARCHIVO_OPERARIOS = "Lista_Operarios_Maderas.json"
+    
+    MAQUINAS_LIST = [
+        "Prensa Hidráulica MH3848",
+        "Canteadora E-700-3 Pro",
+        "Fresadora CNC ELECNC-1530ATC",
+        "Seccionadora Horizontal MD03",
+        "Enchapadora Cantos MD024",
+        "Escuadradora MD025",
+        "Trompo Tupi Eje Inclinable",
+        "Prensa Hidráulica Fría MD028",
+        "Taladro Múltiple Alfa 21T",
+        "Taladro de Árbol KTC-18FC",
+        "Otra Máquina Maderas"
+    ]
+    MATERIALES_LIST = [
+        "Tablero MDF estándar (Crudo/Melamínico)",
+        "Tablero MDF Enchapado",
+        "Aglomerado MDP Melamínico",
+        "Madera Sólida (Pino / Teca)",
+        "Contrachapado / Triplex",
+        "Tablero OSB Estructural",
+        "Otro Material Maderas"
+    ]
+    CALIBRES_LIST = [
+        "14 mm",
+        "18 mm",
+        "25 mm",
+        "30 mm",
+        "40 mm",
+        "50 mm",
+        "✍️ OTRO / LIBRE (Escribir en vivo)"
+    ]
+    MOTIVOS_PARO_LIST = [
+        "Ninguno / Operación Normal",
+        "Mantenimiento Preventivo Mecánico",
+        "Cambio de Herramienta ATC / Brocas",
+        "Ajuste de Temperatura en Prensa Caliente",
+        "Cambio de Depósito / Adhesivo Canteadora",
+        "Falta de Material / Insumos en Planta",
+        "Falla Neumática / Presión de Aire < 6 bar",
+        "Descanso / Almuerzo operador",
+        "Operario en máquina sin producción (Ociosidad / Espera)",
+        "Otro / Imprevisto"
+    ]
+
+# ---------------------------------------------------------
+# 2. GESTIÓN DE OPERARIOS Y ESTADO DE SESIÓN
+# ---------------------------------------------------------
 if "hora_inicio_registro" not in st.session_state or st.session_state["hora_inicio_registro"] is None:
     st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
-# Cargar y guardar lista maestra de operarios
 def cargar_operarios():
     operarios = []
     if os.path.exists(ARCHIVO_OPERARIOS):
@@ -195,60 +302,9 @@ def guardar_operarios(lista_operarios):
     with open(ARCHIVO_OPERARIOS, "w", encoding="utf-8") as f:
         json.dump(sorted(list(set(lista_operarios))), f, ensure_ascii=False, indent=4)
 
-if "lista_operarios" not in st.session_state:
-    st.session_state["lista_operarios"] = cargar_operarios()
+# Actualizar lista de operarios asociada a la planta seleccionada
+st.session_state["lista_operarios"] = cargar_operarios()
 
-# Listas Predeterminados
-MAQUINAS_LIST = [
-    "Punzonadora Trumpf Trumatic 2000R",
-    "Cortadora Láser CNC (MT 36) - F 3015",
-    "Plegadora Durma CNC",
-    "Dobladora Dener",
-    "Soldadura MIG",
-    "Soldadura PUNTO",
-    "Horno Pintura",
-    "Soldadura LASER",
-    "Otra Máquina"
-]
-
-MATERIALES_LIST = [
-    "CR (Cold Rolled)",
-    "HR (Hot Rolled)",
-    "Acero Inoxidable",
-    "Aluminio",
-    "Lámina Galvanizada",
-    "Otro Material"
-]
-
-CALIBRES_LIST = [
-    "0.8 mm (C22)",
-    "0.9 mm (C20)", 
-    "1.2 mm (C18)", 
-    "1.5 mm (C16)", 
-    "1.9 mm (C14)", 
-    "2.5 mm (C12)", 
-    "3.0 mm (1/8\")", 
-    "4.5 mm (3/16\")", 
-    "6.0 mm (1/4\")",
-    "✍️ OTRO / LIBRE (Escribir en vivo)"
-]
-
-MOTIVOS_PARO_LIST = [
-    "Ninguno / Operación Normal",
-    "Falta de material / Materia prima",
-    "Cambio de herramienta / Setup",
-    "Mantenimiento autónomo / Limpieza",
-    "Falta de programa NC / Ingeniería",
-    "Ajuste de holgura / Calidad",
-    "Falta de energía / Aire comprimido",
-    "Cambio de boquilla / Consumibles",
-    "Alerta / Paro de emergencia de máquina",
-    "Descanso / Almuerzo operador",
-    "Operario en máquina sin producción (Ociosidad / Espera)",
-    "Otro / Imprevisto"
-]
-
-# Inicialización de Session State para Cronómetros
 cronometros = ["Setup", "Ciclo Real", "Descargue", "Paros", "Espera Operario"]
 for c in cronometros:
     if f"tiempo_{c}" not in st.session_state:
@@ -265,8 +321,10 @@ def resetear_cronometros():
         st.session_state[f"inicio_{c}"] = None
     st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
-# PARÁMETROS ORGANIZADOS EN 3 COLUMNAS
-with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
+# ---------------------------------------------------------
+# 3. FORMULARIO DE ORDEN DE TRABAJO (OP)
+# ---------------------------------------------------------
+with st.expander(f"📌 DATOS DE LA ORDEN DE TRABAJO (OP) - {planta_seleccionada}", expanded=True):
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -293,20 +351,20 @@ with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
         else:
             operario = ""
 
-        orden = st.text_input("Orden / OP", placeholder="Ej: 2345678")
+        orden = st.text_input("Orden / OP", placeholder="Ej: OP-2026-001")
         fecha = st.date_input("Fecha de Toma", obtener_fecha_bogota())
         turno = st.selectbox("Turno", ["Día", "Tarde", "Noche"])
     
     with col2:
         maquina = st.selectbox("Máquina / Estación", MAQUINAS_LIST)
-        nombre_general = st.text_input("Proyecto / Producto", placeholder="Ej: Mesa de Juntas")
-        detalle_pieza = st.text_input("Detalle Pieza / Nesting", placeholder="Ej: Nesting Completo - 1 lámina")
+        nombre_general = st.text_input("Proyecto / Producto", placeholder="Ej: Estantería Modulo B")
+        detalle_pieza = st.text_input("Detalle Pieza / Nesting", placeholder="Ej: Lateral Izquierdo 18mm")
         material = st.selectbox("Material", MATERIALES_LIST)
 
     with col3:
-        calibre_sel = st.selectbox("Calibre", CALIBRES_LIST)
+        calibre_sel = st.selectbox("Espesor / Calibre", CALIBRES_LIST)
         if calibre_sel == "✍️ OTRO / LIBRE (Escribir en vivo)":
-            calibre = st.text_input("Especificar Calibre Manual", placeholder="Ej: 4.5 mm / 1/4\"")
+            calibre = st.text_input("Especificar Espesor Manual", placeholder="Ej: 15 mm / 5/8\"")
         else:
             calibre = calibre_sel
 
@@ -314,14 +372,15 @@ with st.expander("📌 DATOS DE LA ORDEN DE TRABAJO (OP)", expanded=True):
         cant_piezas_ok = st.number_input("Piezas Procesadas OK", min_value=0, step=1, value=1)
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
-# ÁREA DE CRONOMETRAJE EN VIVO
+# ---------------------------------------------------------
+# 4. CRONOMETRAJE EN VIVO
+# ---------------------------------------------------------
 with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
     def render_cronometro(nombre, clave):
         esta_corriendo = st.session_state[f"corriendo_{clave}"]
         tiempo_acumulado = st.session_state[f"tiempo_{clave}"]
         
-        # Cálculo usando marca de tiempo UNIX absoluta (Inmune a bloqueos de pantalla / WhatsApp)
         if esta_corriendo and st.session_state[f"inicio_{clave}"] is not None:
             tiempo_actual = tiempo_acumulado + (time.time() - st.session_state[f"inicio_{clave}"])
         else:
@@ -380,8 +439,10 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
 
 st.markdown("---")
 
-# GUARDADO DE REGISTRO Y CÁLCULO DE EFICIENCIA (%)
-if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=True, type="primary"):
+# ---------------------------------------------------------
+# 5. GUARDADO DE REGISTRO EN EXCEL
+# ---------------------------------------------------------
+if st.button(f"💾 GUARDAR REGISTRO EN EXCEL ({planta_seleccionada})", use_container_width=True, type="primary"):
     if not orden or not maquina:
         st.error("⚠️ Ingrese la 'Orden / OP' y seleccione la 'Máquina' para guardar.")
     elif not operario:
@@ -395,6 +456,7 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         hora_fin = obtener_hora_bogota()
 
         nuevo_registro = {
+            "Planta": str(planta_seleccionada),
             "Operario": str(operario),
             "Orden": str(orden),
             "Fecha": fecha.strftime("%Y-%m-%d"),
@@ -403,7 +465,7 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
             "Proyecto": str(nombre_general),
             "Detalle Pieza": str(detalle_pieza),
             "Material": str(material),
-            "Calibre": str(calibre),
+            "Espesor/Calibre": str(calibre),
             "Cantidad Lote": int(cant_general),
             "Piezas OK": int(cant_piezas_ok),
             "Setup (min)": float(t_setup),
@@ -434,7 +496,7 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
         df_final = df_final.dropna(subset=["Orden"])
         df_final.to_excel(ARCHIVO_EXCEL, index=False)
         
-        st.success(f"✅ ¡Registro de la Orden {orden} guardado (Inicio: {hora_inicio} - Fin: {hora_fin})!")
+        st.success(f"✅ ¡Registro de la Orden {orden} en {planta_seleccionada} guardado con éxito!")
 
         tiempo_total = float(t_setup) + float(t_ciclo) + float(t_descargue) + float(t_espera) + float(t_paros)
         tiempo_productivo = float(t_ciclo)
@@ -450,19 +512,14 @@ if st.button("💾 GUARDAR REGISTRO Y ACTUALIZAR EXCEL", use_container_width=Tru
             m2.metric("Tiempo Productivo", f"{tiempo_productivo:.1f} min")
             m3.metric("Eficiencia (Valor Agregado)", f"{eficiencia:.1f}%")
             m4.metric("Desperdicio (Paros/Espera)", f"{desperdicio:.1f}%")
-            
-            if eficiencia >= 75:
-                st.info("🟢 **Excelente desempeño:** Operación con alta productividad.")
-            elif 50 <= eficiencia < 75:
-                st.warning("🟠 **Desempeño medio:** Revisar tiempos de alistamiento (setup) y esperas.")
-            else:
-                st.error("🔴 **Alerta de eficiencia:** Alto porcentaje de tiempo improductivo detectado.")
 
         resetear_cronometros()
         st.rerun()
 
-# HISTORIAL Y MATRIZ
-st.markdown('<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS DE PLANTA</div>', unsafe_allow_html=True)
+# ---------------------------------------------------------
+# 6. HISTORIAL Y EXPORTACIÓN POR PLANTA
+# ---------------------------------------------------------
+st.markdown(f'<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS - {planta_seleccionada}</div>', unsafe_allow_html=True)
 
 if os.path.exists(ARCHIVO_EXCEL):
     df_ver = pd.read_excel(ARCHIVO_EXCEL)
@@ -479,8 +536,8 @@ if os.path.exists(ARCHIVO_EXCEL):
     col_pass, col_btn = st.columns([1, 2])
     
     with col_pass:
-        clave_ingresada = st.text_input("Ingresa el PIN de autorización para descargar:", type="password", placeholder="Ingresa PIN aquí...")
-        borrar_tras_descarga = st.checkbox("🧹 Limpiar / Borrar historial en la app tras exportar", value=True)
+        clave_ingresada = st.text_input("Ingresa el PIN de autorización para descargar:", type="password", placeholder="Ingresa PIN aquí...", key="pin_download")
+        borrar_tras_descarga = st.checkbox("🧹 Limpiar / Borrar historial tras exportar", value=True)
 
     with col_btn:
         st.write("") 
@@ -488,13 +545,15 @@ if os.path.exists(ARCHIVO_EXCEL):
         if clave_ingresada.strip() == "190520":
             buffer = io.BytesIO()
             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                df_ver_limpio.to_excel(writer, index=False, sheet_name='Tiempos')
+                df_ver_limpio.to_excel(writer, index=False, sheet_name=f'Tiempos_{planta_seleccionada[:5]}')
             buffer.seek(0)
             
+            nombre_archivo_descarga = f"Registro_{planta_seleccionada.replace(' ', '_')}_{datetime.date.today()}.xlsx"
+            
             descargado = st.download_button(
-                label="📥 DESCARGAR MATRIZ COMPLETA Y VACIAR HISTORIAL",
+                label=f"📥 DESCARGAR MATRIZ {planta_seleccionada}",
                 data=buffer,
-                file_name=f"Registro_Produccion_{datetime.date.today()}.xlsx",
+                file_name=nombre_archivo_descarga,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
                 type="primary"
@@ -503,7 +562,7 @@ if os.path.exists(ARCHIVO_EXCEL):
             if descargado and borrar_tras_descarga:
                 if os.path.exists(ARCHIVO_EXCEL):
                     os.remove(ARCHIVO_EXCEL)
-                st.success("🧹 Historial descargado y borrado correctamente de la aplicación.")
+                st.success(f"🧹 Historial de {planta_seleccionada} borrado correctamente.")
                 time.sleep(1)
                 st.rerun()
 
@@ -513,7 +572,7 @@ if os.path.exists(ARCHIVO_EXCEL):
             st.warning("🔑 Ingresa la contraseña autorizada para habilitar la descarga.")
 
 else:
-    st.info("Aún no hay registros consolidados.")
+    st.info(f"Aún no hay registros consolidados para {planta_seleccionada}.")
 
 # Pie de página
 st.markdown("""
@@ -522,7 +581,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# BUCLE DE REFRESCO AUTOMÁTICO EN TIEMPO REAL
+# Refresco dinámico
 if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
     time.sleep(1)
     st.rerun()
