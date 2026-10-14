@@ -30,35 +30,34 @@ if "planta_activa" not in st.session_state:
 
 planta_seleccionada = st.session_state["planta_activa"]
 
-# Definición de Colores Dinámicos por Planta
+# Definición de Colores Sobrios Dinámicos por Planta
 if planta_seleccionada == "Metalmecánica":
-    COLOR_BORDER = "#0284c7"
-    COLOR_BADGE_BG = "rgba(56, 189, 248, 0.18)"
-    COLOR_BADGE_TEXT = "#38bdf8"
-    COLOR_BADGE_BORDER = "rgba(56, 189, 248, 0.4)"
-    COLOR_HEADER_BG = "#f0f9ff"
+    COLOR_ACCENT = "#0284c7"
+    COLOR_BADGE_BG = "#f0f9ff"
+    COLOR_BADGE_TEXT = "#0369a1"
+    COLOR_BADGE_BORDER = "#bae6fd"
+    COLOR_RUNNING_TEXT = "#0284c7"
+    COLOR_HEADER_BG = "#f8fafc"
     COLOR_HEADER_BORDER = "#0284c7"
-    COLOR_HEADER_TEXT = "#0369a1"
-    COLOR_PRIMARY_BTN = "#0284c7"
-    COLOR_PRIMARY_HOVER = "#0369a1"
+    COLOR_HEADER_TEXT = "#0f172a"
 else:  # Maderas
-    COLOR_BORDER = "#ea580c"
-    COLOR_BADGE_BG = "rgba(249, 115, 22, 0.18)"
-    COLOR_BADGE_TEXT = "#f97316"
-    COLOR_BADGE_BORDER = "rgba(249, 115, 22, 0.4)"
-    COLOR_HEADER_BG = "#fff7ed"
+    COLOR_ACCENT = "#ea580c"
+    COLOR_BADGE_BG = "#fff7ed"
+    COLOR_BADGE_TEXT = "#c2410c"
+    COLOR_BADGE_BORDER = "#fed7aa"
+    COLOR_RUNNING_TEXT = "#ea580c"
+    COLOR_HEADER_BG = "#fafaf9"
     COLOR_HEADER_BORDER = "#ea580c"
-    COLOR_HEADER_TEXT = "#9a3412"
-    COLOR_PRIMARY_BTN = "#ea580c"
-    COLOR_PRIMARY_HOVER = "#c2410c"
+    COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS Nivel Corporativo Avanzado
+# Estilos CSS Ultra-Elegantes, Sobrios y Compactos
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {{
         font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #334155;
     }}
     
     /* Eliminar espacio superior nativo de Streamlit */
@@ -76,201 +75,179 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* Barra Superior Unificada */
+    /* Header Ejecutivo Sobrio */
     .top-bar-container {{
-        background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
-        border-left: 5px solid {COLOR_BORDER};
-        padding: 12px 20px;
-        border-radius: 8px;
+        background: #0f172a;
+        border-left: 4px solid {COLOR_ACCENT};
+        padding: 10px 18px;
+        border-radius: 6px;
         color: white;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 12px;
     }}
 
     .main-title {{
         color: #ffffff;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 800;
-        letter-spacing: 0.2px;
+        letter-spacing: 0.3px;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         text-transform: uppercase;
     }}
 
     .sub-title {{
-        color: #a8a29e;
+        color: #94a3b8;
         font-size: 11px;
         font-weight: 500;
-        margin-top: 3px;
+        margin-top: 2px;
     }}
 
     .badge-plant {{
         background: {COLOR_BADGE_BG};
         color: {COLOR_BADGE_TEXT};
         border: 1px solid {COLOR_BADGE_BORDER};
-        padding: 3px 10px;
+        padding: 2px 8px;
         border-radius: 4px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 800;
         letter-spacing: 0.5px;
     }}
 
-    /* Botones de Selección de Planta */
+    /* Switcher de Planta */
     div[data-testid="stHorizontalBlock"] .stButton > button {{
         border-radius: 6px !important;
-        font-weight: 800 !important;
-        font-size: 12px !important;
-        height: 42px !important;
+        font-weight: 700 !important;
+        font-size: 11px !important;
+        height: 38px !important;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
     }}
 
-    /* Estilos Primarios Dinámicos */
     button[kind="primary"] {{
-        background-color: {COLOR_PRIMARY_BTN} !important;
-        border-color: {COLOR_PRIMARY_BTN} !important;
+        background-color: {COLOR_ACCENT} !important;
+        border-color: {COLOR_ACCENT} !important;
         color: #ffffff !important;
     }}
-    
-    button[kind="primary"]:hover {{
-        background-color: {COLOR_PRIMARY_HOVER} !important;
-        border-color: {COLOR_PRIMARY_HOVER} !important;
-    }}
 
-    /* DISEÑO REVOLUCIONARIO DE DÍGITOS Y TARJETAS DE CRONÓMETRO */
-    .timer-box-container {{
+    /* TARJETAS DE CRONÓMETRO COMPACTAS Y SOBRIAS */
+    .timer-card-slim {{
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 14px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-        transition: all 0.2s ease-in-out;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }}
 
-    .timer-box-running {{
-        background: #f0fdf4;
-        border: 2px solid #16a34a;
-        border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 14px;
-        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
-        transition: all 0.2s ease-in-out;
+    .timer-card-slim-active {{
+        background: #ffffff;
+        border: 1.5px solid {COLOR_ACCENT};
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }}
 
-    .timer-header-flex {{
+    .timer-header-slim {{
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }}
 
-    .timer-title {{
-        font-size: 11px;
+    .timer-title-slim {{
+        font-size: 10px;
         font-weight: 800;
-        color: #475569;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }}
-
-    .status-pill-idle {{
-        background: #f1f5f9;
         color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }}
+
+    .pill-idle {{
+        color: #94a3b8;
         font-size: 9px;
-        font-weight: 800;
-        padding: 2px 8px;
-        border-radius: 4px;
+        font-weight: 700;
         text-transform: uppercase;
     }}
 
-    .status-pill-active {{
-        background: #dcfce7;
-        color: #15803d;
-        border: 1px solid #bbf7d0;
+    .pill-active {{
+        color: {COLOR_RUNNING_TEXT};
         font-size: 9px;
         font-weight: 800;
-        padding: 2px 8px;
-        border-radius: 4px;
         text-transform: uppercase;
     }}
 
-    .digital-display {{
-        background: #0f172a;
-        border-radius: 6px;
-        padding: 8px 14px;
+    .display-row {{
         display: flex;
         align-items: baseline;
-        justify-content: space-between;
-        margin-bottom: 10px;
+        gap: 6px;
     }}
 
-    .digits-text {{
+    .digits-slim {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 32px;
-        font-weight: 800;
-        color: #38bdf8;
-        letter-spacing: 1px;
-    }}
-
-    .digits-text-active {{
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 32px;
-        font-weight: 800;
-        color: #4ade80;
-        letter-spacing: 1px;
-    }}
-
-    .unit-text {{
-        font-size: 11px;
+        font-size: 24px;
         font-weight: 700;
-        color: #64748b;
-        text-transform: uppercase;
+        color: #1e293b;
+        line-height: 1;
+    }}
+
+    .digits-slim-active {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 24px;
+        font-weight: 700;
+        color: {COLOR_RUNNING_TEXT};
+        line-height: 1;
+    }}
+
+    .unit-slim {{
+        font-size: 10px;
+        font-weight: 600;
+        color: #94a3b8;
     }}
 
     .section-header {{
         background-color: {COLOR_HEADER_BG};
-        border-left: 4px solid {COLOR_HEADER_BORDER};
-        padding: 6px 12px;
+        border-left: 3px solid {COLOR_HEADER_BORDER};
+        padding: 5px 10px;
         font-size: 11px;
         font-weight: 800;
         color: {COLOR_HEADER_TEXT};
         border-radius: 0 4px 4px 0;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
     }}
     
     .section-header-red {{
         background-color: #fef2f2;
-        border-left: 4px solid #dc2626;
-        padding: 6px 12px;
+        border-left: 3px solid #ef4444;
+        padding: 5px 10px;
         font-size: 11px;
         font-weight: 800;
         color: #991b1b;
         border-radius: 0 4px 4px 0;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
     }}
 
     .footer-credits {{
         text-align: center;
-        padding: 12px;
-        margin-top: 20px;
-        background: #fafaf9;
-        border-top: 1px solid #e7e5e4;
+        padding: 10px;
+        margin-top: 15px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
         border-radius: 6px;
-        color: #78716c;
+        color: #64748b;
         font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
     }}
     
     .footer-credits span {{
-        color: {COLOR_PRIMARY_BTN};
+        color: {COLOR_ACCENT};
         font-weight: 800;
     }}
     </style>
@@ -279,7 +256,7 @@ st.markdown(f"""
 # ---------------------------------------------------------
 # 1. HEADER COMPACTO Y SELECTOR DE PLANTA
 # ---------------------------------------------------------
-col_head, col_sw1, col_sw2 = st.columns([2.4, 1, 1])
+col_head, col_sw1, col_sw2 = st.columns([2.5, 1, 1])
 
 with col_sw1:
     if st.button("PLANTA METALMECÁNICA", use_container_width=True, type="primary" if planta_seleccionada == "Metalmecánica" else "secondary"):
@@ -505,7 +482,7 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (DISEÑO RE-DISEÑADO PROFESIONAL)
+# 4. CRONOMETRAJE EN VIVO (DISEÑO SLIM Y ELEGANTE)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
@@ -521,46 +498,51 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         minutos = int(tiempo_actual // 60)
         segundos = int(tiempo_actual % 60)
         
-        box_class = "timer-box-running" if esta_corriendo else "timer-box-container"
-        pill_class = "status-pill-active" if esta_corriendo else "status-pill-idle"
+        card_class = "timer-card-slim-active" if esta_corriendo else "timer-card-slim"
+        pill_class = "pill-active" if esta_corriendo else "pill-idle"
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
-        digits_class = "digits-text-active" if esta_corriendo else "digits-text"
+        digits_class = "digits-slim-active" if esta_corriendo else "digits-slim"
         
-        st.markdown(f'''
-            <div class="{box_class}">
-                <div class="timer-header-flex">
-                    <span class="timer-title">{nombre}</span>
-                    <span class="{pill_class}">{pill_text}</span>
+        c_info, c_actions = st.columns([2.5, 1.5])
+        
+        with c_info:
+            st.markdown(f'''
+                <div class="{card_class}">
+                    <div class="timer-header-slim">
+                        <span class="timer-title-slim">{nombre}</span>
+                        <span class="{pill_class}">{pill_text}</span>
+                    </div>
+                    <div class="display-row">
+                        <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
+                        <span class="unit-slim">min</span>
+                    </div>
                 </div>
-                <div class="digital-display">
-                    <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
-                    <span class="unit-text">MINUTO(S)</span>
-                </div>
-            </div>
-        ''', unsafe_allow_html=True)
-        
-        b_toggle, b_reset = st.columns([3, 1])
-        
-        with b_toggle:
-            label_btn = "PAUSAR" if esta_corriendo else "INICIAR"
-            tipo_btn = "primary" if not esta_corriendo else "secondary"
+            ''', unsafe_allow_html=True)
+
+        with c_actions:
+            st.write("") # Alineación vertical
+            b1, b2 = st.columns([2, 1])
             
-            if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn, use_container_width=True):
-                if esta_corriendo:
-                    st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
+            with b1:
+                label_btn = "PAUSAR" if esta_corriendo else "INICIAR"
+                tipo_btn = "primary" if not esta_corriendo else "secondary"
+                
+                if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn, use_container_width=True):
+                    if esta_corriendo:
+                        st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
+                        st.session_state[f"corriendo_{clave}"] = False
+                        st.session_state[f"inicio_{clave}"] = None
+                    else:
+                        st.session_state[f"inicio_{clave}"] = time.time()
+                        st.session_state[f"corriendo_{clave}"] = True
+                    st.rerun()
+
+            with b2:
+                if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
+                    st.session_state[f"tiempo_{clave}"] = 0.0
                     st.session_state[f"corriendo_{clave}"] = False
                     st.session_state[f"inicio_{clave}"] = None
-                else:
-                    st.session_state[f"inicio_{clave}"] = time.time()
-                    st.session_state[f"corriendo_{clave}"] = True
-                st.rerun()
-
-        with b_reset:
-            if st.button("REINICIAR", key=f"reset_{clave}", help="Reiniciar contador a cero", use_container_width=True):
-                st.session_state[f"tiempo_{clave}"] = 0.0
-                st.session_state[f"corriendo_{clave}"] = False
-                st.session_state[f"inicio_{clave}"] = None
-                st.rerun()
+                    st.rerun()
                 
         return round(tiempo_actual / 60.0, 2)
 
@@ -722,7 +704,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Bucle de refresco en vivo constante
+# Bucle de refresco constante en vivo
 if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
     time.sleep(1)
     st.rerun()
