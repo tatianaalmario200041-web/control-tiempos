@@ -50,13 +50,13 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS de Alta Precisión - Simetría y Altura Empatada
+# Estilos CSS de Alta Precisión - Fuentes Elegantes y Contenedores Sólidos
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
     
     html, body, [class*="css"] {{
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: 'Inter', sans-serif;
         color: #334155;
     }}
     
@@ -131,13 +131,13 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    /* TARJETAS CON ALTURA TOTAL EMPATADA */
+    /* TARJETAS CON TIPOGRAFÍA ELEGANTE Y COMPACTA */
     .timer-card-perfect {{
         background: #ffffff;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
         padding: 8px 14px;
-        height: 56px;
+        height: 60px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -149,7 +149,7 @@ st.markdown(f"""
         border: 2px solid {COLOR_ACCENT};
         border-radius: 8px;
         padding: 8px 14px;
-        height: 56px;
+        height: 60px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -188,23 +188,25 @@ st.markdown(f"""
     .display-row {{
         display: flex;
         align-items: baseline;
-        gap: 6px;
+        justify-content: space-between;
     }}
 
     .digits-compact {{
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 24px;
-        font-weight: 800;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 26px;
+        font-weight: 700;
         color: #0f172a;
         line-height: 1;
+        letter-spacing: -0.5px;
     }}
 
     .digits-compact-active {{
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 24px;
-        font-weight: 800;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 26px;
+        font-weight: 700;
         color: {COLOR_RUNNING_TEXT};
         line-height: 1;
+        letter-spacing: -0.5px;
     }}
 
     .unit-compact {{
@@ -213,7 +215,16 @@ st.markdown(f"""
         color: #64748b;
     }}
 
-    /* IGUALACIÓN RIGUROSA DE ALTURA Y MARGEN DE BOTONES */
+    .prev-val-text {{
+        font-size: 9px;
+        font-weight: 600;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 1px 5px;
+        border-radius: 3px;
+    }}
+
+    /* BOTONES DE CONTROL EMPATADOS EN ALTURA */
     div[data-testid="column"] .stButton {{
         margin-top: 0px !important;
         margin-bottom: 0px !important;
@@ -224,7 +235,7 @@ st.markdown(f"""
         font-size: 11px !important;
         font-weight: 800 !important;
         letter-spacing: 0.5px !important;
-        height: 56px !important;
+        height: 60px !important;
         padding: 0px !important;
         display: flex !important;
         align-items: center !important;
@@ -451,12 +462,15 @@ for c in cronometros:
         st.session_state[f"corriendo_{c}"] = False
     if f"inicio_{c}" not in st.session_state:
         st.session_state[f"inicio_{c}"] = None
+    if f"previo_{c}" not in st.session_state:
+        st.session_state[f"previo_{c}"] = None
 
 def resetear_cronometros():
     for c in cronometros:
         st.session_state[f"tiempo_{c}"] = 0.0
         st.session_state[f"corriendo_{c}"] = False
         st.session_state[f"inicio_{c}"] = None
+        st.session_state[f"previo_{c}"] = None
     st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
 # ---------------------------------------------------------
@@ -511,13 +525,14 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (SIMETRÍA Y ALTURA PAREJA)
+# 4. CRONOMETRAJE EN VIVO (CON MEMORIA DE RESET Y NÚMEROS ELEGANTES)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
     def render_cronometro(nombre, clave):
         esta_corriendo = st.session_state[f"corriendo_{clave}"]
         tiempo_acumulado = st.session_state[f"tiempo_{clave}"]
+        valor_previo = st.session_state[f"previo_{clave}"]
         
         if esta_corriendo and st.session_state[f"inicio_{clave}"] is not None:
             tiempo_actual = tiempo_acumulado + (time.time() - st.session_state[f"inicio_{clave}"])
@@ -532,6 +547,14 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
         digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
+        # Formatear el texto del valor previo si existe
+        if valor_previo is not None and valor_previo > 0:
+            m_prev = int(valor_previo // 60)
+            s_prev = int(valor_previo % 60)
+            prev_html = f'<span class="prev-val-text" title="Último valor registrado antes de reiniciar">Último: {m_prev:02d}:{s_prev:02d}</span>'
+        else:
+            prev_html = ''
+
         c_digits, c_btn_play, c_btn_rst = st.columns([2.5, 1.2, 0.4])
         
         with c_digits:
@@ -542,8 +565,11 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                         <span class="{pill_class}">{pill_text}</span>
                     </div>
                     <div class="display-row">
-                        <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
-                        <span class="unit-compact">min</span>
+                        <div>
+                            <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
+                            <span class="unit-compact">min</span>
+                        </div>
+                        {prev_html}
                     </div>
                 </div>
             ''', unsafe_allow_html=True)
@@ -564,9 +590,12 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
 
         with c_btn_rst:
             if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
+                # Guardar el último valor acumulado antes de borrar
+                st.session_state[f"previo_{clave}"] = tiempo_actual
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
                 st.session_state[f"inicio_{clave}"] = None
+                st.toast(f"Cronómetro {nombre} reiniciado. Se guardó respaldo previo.")
                 st.rerun()
                 
         st.markdown('<div class="row-spacer"></div>', unsafe_allow_html=True)
