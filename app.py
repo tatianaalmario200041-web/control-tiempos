@@ -30,7 +30,7 @@ if "planta_activa" not in st.session_state:
 
 planta_seleccionada = st.session_state["planta_activa"]
 
-# Definición de Colores Dinámicos por Planta (Restaurados y Perfectos)
+# Definición de Colores Dinámicos por Planta
 if planta_seleccionada == "Metalmecánica":
     COLOR_ACCENT = "#0284c7"
     COLOR_BADGE_BG = "#f0f9ff"
@@ -50,16 +50,17 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS con Tipografía Fina, Esbelta y Elegante
+# Estilos CSS de Alta Precision - Alineación Total de Altura
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {{
         font-family: 'Plus Jakarta Sans', sans-serif;
         color: #334155;
     }}
     
+    /* Eliminar espacio superior nativo de Streamlit */
     [data-testid="stHeader"] {{
         display: none !important;
     }}
@@ -114,13 +115,29 @@ st.markdown(f"""
         letter-spacing: 0.5px;
     }}
 
-    /* TARJETAS DE CRONÓMETRO - NÚMEROS FINOS Y PROPORCIONADOS */
+    /* Switcher de Planta */
+    div[data-testid="stHorizontalBlock"] .stButton > button {{
+        border-radius: 6px !important;
+        font-weight: 700 !important;
+        font-size: 11px !important;
+        height: 38px !important;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }}
+
+    button[kind="primary"] {{
+        background-color: {COLOR_ACCENT} !important;
+        border-color: {COLOR_ACCENT} !important;
+        color: #ffffff !important;
+    }}
+
+    /* TARJETAS Y ALINEACIÓN DE ALTURA TOTAL */
     .timer-card-perfect {{
         background: #ffffff;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
         padding: 8px 14px;
-        height: 60px;
+        height: 62px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -132,7 +149,7 @@ st.markdown(f"""
         border: 2px solid {COLOR_ACCENT};
         border-radius: 8px;
         padding: 8px 14px;
-        height: 60px;
+        height: 62px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -171,46 +188,32 @@ st.markdown(f"""
     .display-row {{
         display: flex;
         align-items: baseline;
-        gap: 4px;
+        gap: 6px;
     }}
 
-    /* Estilo de dígitos nítido, delgado y elegante (JetBrains Mono Proporcional) */
     .digits-compact {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 24px;
-        font-weight: 600;
+        font-size: 26px;
+        font-weight: 800;
         color: #0f172a;
         line-height: 1;
-        letter-spacing: -0.5px;
     }}
 
     .digits-compact-active {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 24px;
-        font-weight: 600;
+        font-size: 26px;
+        font-weight: 800;
         color: {COLOR_RUNNING_TEXT};
         line-height: 1;
-        letter-spacing: -0.5px;
     }}
 
     .unit-compact {{
         font-size: 10px;
-        font-weight: 500;
+        font-weight: 700;
         color: #64748b;
     }}
 
-    .prev-val-badge {{
-        font-size: 9px;
-        font-weight: 600;
-        color: #475569;
-        background: #f1f5f9;
-        padding: 1px 5px;
-        border-radius: 4px;
-        margin-left: auto;
-        border: 1px solid #e2e8f0;
-    }}
-
-    /* BOTONES DE CONTROL */
+    /* REGLA MAESTRA: BOTONES CON ALTURA Y MARGEN EMPATADO */
     div[data-testid="column"] .stButton {{
         margin-top: 0px !important;
         margin-bottom: 0px !important;
@@ -218,10 +221,10 @@ st.markdown(f"""
 
     div[data-testid="column"] .stButton > button {{
         border-radius: 8px !important;
-        font-size: 11px !important;
+        font-size: 12px !important;
         font-weight: 800 !important;
         letter-spacing: 0.5px !important;
-        height: 60px !important;
+        height: 62px !important;
         padding: 0px !important;
         display: flex !important;
         align-items: center !important;
@@ -229,8 +232,9 @@ st.markdown(f"""
         box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     }}
 
+    /* Separación entre filas de cronómetros */
     .row-spacer {{
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }}
 
     .section-header {{
@@ -448,15 +452,12 @@ for c in cronometros:
         st.session_state[f"corriendo_{c}"] = False
     if f"inicio_{c}" not in st.session_state:
         st.session_state[f"inicio_{c}"] = None
-    if f"previo_{c}" not in st.session_state:
-        st.session_state[f"previo_{c}"] = None
 
 def resetear_cronometros():
     for c in cronometros:
         st.session_state[f"tiempo_{c}"] = 0.0
         st.session_state[f"corriendo_{c}"] = False
         st.session_state[f"inicio_{c}"] = None
-        st.session_state[f"previo_{c}"] = None
     st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
 # ---------------------------------------------------------
@@ -511,14 +512,13 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (SEGURO, LIMPIO Y SIN ERRORES)
+# 4. CRONOMETRAJE EN VIVO (ALINEACIÓN DE ALTURA PERFECTA)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
     def render_cronometro(nombre, clave):
         esta_corriendo = st.session_state[f"corriendo_{clave}"]
         tiempo_acumulado = st.session_state[f"tiempo_{clave}"]
-        valor_previo = st.session_state[f"previo_{clave}"]
         
         if esta_corriendo and st.session_state[f"inicio_{clave}"] is not None:
             tiempo_actual = tiempo_acumulado + (time.time() - st.session_state[f"inicio_{clave}"])
@@ -533,13 +533,7 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
         digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
-        # Respaldo seguro del valor previo (sin romper HTML)
-        badge_html = ""
-        if valor_previo is not None and valor_previo > 0:
-            m_prev = int(valor_previo // 60)
-            s_prev = int(valor_previo % 60)
-            badge_html = f'<span class="prev-val-badge">Último: {m_prev:02d}:{s_prev:02d}</span>'
-
+        # Grid calibrado: Módulo de tiempo + Botón Iniciar (Ancho y Alto parejo) + Botón Reiniciar
         c_digits, c_btn_play, c_btn_rst = st.columns([2.5, 1.2, 0.4])
         
         with c_digits:
@@ -552,7 +546,6 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                     <div class="display-row">
                         <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
                         <span class="unit-compact">min</span>
-                        {badge_html}
                     </div>
                 </div>
             ''', unsafe_allow_html=True)
@@ -573,13 +566,12 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
 
         with c_btn_rst:
             if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
-                st.session_state[f"previo_{clave}"] = tiempo_actual
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
                 st.session_state[f"inicio_{clave}"] = None
-                st.toast(f"Cronómetro {nombre} reiniciado. Respaldo guardado.")
                 st.rerun()
                 
+        # Separador visual entre filas
         st.markdown('<div class="row-spacer"></div>', unsafe_allow_html=True)
         return round(tiempo_actual / 60.0, 2)
 
@@ -736,7 +728,7 @@ if os.path.exists(ARCHIVO_EXCEL):
 else:
     st.info(f"Aún no hay registros consolidados para Planta {planta_seleccionada}.")
 
-# Pie de página actualizado
+# Pie de página
 st.markdown("""
     <div class="footer-credits">
         Desarrollado por <span>Tatiana Almario • Asistente de Costos</span>
