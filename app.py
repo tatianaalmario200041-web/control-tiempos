@@ -30,7 +30,7 @@ if "planta_activa" not in st.session_state:
 
 planta_seleccionada = st.session_state["planta_activa"]
 
-# Definición de Colores Sobrios Dinámicos por Planta
+# Definición de Colores Dinámicos por Planta
 if planta_seleccionada == "Metalmecánica":
     COLOR_ACCENT = "#0284c7"
     COLOR_BADGE_BG = "#f0f9ff"
@@ -50,7 +50,7 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS Compactos y Proporcionados con Botones Estilizados
+# Estilos CSS Ultra-Compactos y Proporcionados
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -131,30 +131,30 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    /* TARJETAS DE CRONÓMETRO CON BOTONES INTEGRADOS COMPACTOS */
-    .timer-card-compact {{
+    /* TARJETAS DE CRONÓMETRO COMPACTAS INTEGRADAS */
+    .timer-card-perfect {{
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 10px 14px;
+        border-radius: 6px;
+        padding: 8px 12px;
         margin-bottom: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }}
 
-    .timer-card-compact-active {{
+    .timer-card-perfect-active {{
         background: #ffffff;
         border: 1.5px solid {COLOR_ACCENT};
-        border-radius: 8px;
-        padding: 10px 14px;
+        border-radius: 6px;
+        padding: 8px 12px;
         margin-bottom: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
     }}
 
     .timer-top-line {{
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 6px;
+        margin-bottom: 2px;
     }}
 
     .timer-title-text {{
@@ -187,7 +187,7 @@ st.markdown(f"""
 
     .digits-compact {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 700;
         color: #1e293b;
         line-height: 1;
@@ -195,7 +195,7 @@ st.markdown(f"""
 
     .digits-compact-active {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 700;
         color: {COLOR_RUNNING_TEXT};
         line-height: 1;
@@ -207,13 +207,14 @@ st.markdown(f"""
         color: #94a3b8;
     }}
 
-    /* BOTONES ANGOSTOS Y COMPACTOS PARA CRONÓMETROS */
-    .stButton > button {{
+    /* BOTONES ANGOSTOS Y COMPACTOS ALINEADOS */
+    div[data-testid="column"] .stButton > button {{
         border-radius: 5px !important;
-        font-size: 11px !important;
+        font-size: 10px !important;
         font-weight: 700 !important;
-        padding: 4px 10px !important;
-        min-height: 32px !important;
+        padding: 2px 8px !important;
+        min-height: 30px !important;
+        height: 30px !important;
     }}
 
     .section-header {{
@@ -491,7 +492,7 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (BOTONES ANGOSTOS INTEGRADOS)
+# 4. CRONOMETRAJE EN VIVO (MÁXIMA INTEGRACIÓN Y SIMETRÍA)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
@@ -507,15 +508,15 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         minutos = int(tiempo_actual // 60)
         segundos = int(tiempo_actual % 60)
         
-        card_class = "timer-card-compact-active" if esta_corriendo else "timer-card-compact"
+        card_class = "timer-card-perfect-active" if esta_corriendo else "timer-card-perfect"
         pill_class = "pill-active" if esta_corriendo else "pill-idle"
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
         digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
-        # Estructura limpia de 2 columnas: Datos (Izquierda) + Botones Angostos (Derecha)
-        col_display, col_controls = st.columns([2.8, 1.2])
+        # Grid perfecto pegado: Información del tiempo (Ancho) + Botones pegados (Estrecho)
+        c_card, c_btn1, c_btn2 = st.columns([3.2, 0.9, 0.4])
         
-        with col_display:
+        with c_card:
             st.markdown(f'''
                 <div class="{card_class}">
                     <div class="timer-top-line">
@@ -529,30 +530,28 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                 </div>
             ''', unsafe_allow_html=True)
 
-        with col_controls:
-            st.write("") # Alineación vertical fina
-            btn_play, btn_rst = st.columns([2, 1])
+        with c_btn1:
+            st.write("") # Alineación fina
+            label_btn = "PAUSAR" if esta_corriendo else "INICIAR"
+            tipo_btn = "primary" if not esta_corriendo else "secondary"
             
-            with btn_play:
-                label_btn = "PAUSAR" if esta_corriendo else "INICIAR"
-                tipo_btn = "primary" if not esta_corriendo else "secondary"
-                
-                if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn):
-                    if esta_corriendo:
-                        st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
-                        st.session_state[f"corriendo_{clave}"] = False
-                        st.session_state[f"inicio_{clave}"] = None
-                    else:
-                        st.session_state[f"inicio_{clave}"] = time.time()
-                        st.session_state[f"corriendo_{clave}"] = True
-                    st.rerun()
-
-            with btn_rst:
-                if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro"):
-                    st.session_state[f"tiempo_{clave}"] = 0.0
+            if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn, use_container_width=True):
+                if esta_corriendo:
+                    st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
                     st.session_state[f"corriendo_{clave}"] = False
                     st.session_state[f"inicio_{clave}"] = None
-                    st.rerun()
+                else:
+                    st.session_state[f"inicio_{clave}"] = time.time()
+                    st.session_state[f"corriendo_{clave}"] = True
+                st.rerun()
+
+        with c_btn2:
+            st.write("") # Alineación fina
+            if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
+                st.session_state[f"tiempo_{clave}"] = 0.0
+                st.session_state[f"corriendo_{clave}"] = False
+                st.session_state[f"inicio_{clave}"] = None
+                st.rerun()
                 
         return round(tiempo_actual / 60.0, 2)
 
@@ -568,7 +567,10 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         st.markdown('<div class="section-header-red">TIEMPOS IMPRODUCTIVOS / PAROS</div>', unsafe_allow_html=True)
         t_espera = render_cronometro("OPERARIO EN ESPERA", "Espera Operario")
         t_paros = render_cronometro("MUERTO / PARO MÁQUINA", "Paros")
-        motivo_paro = st.selectbox("MOTIVO PRINCIPAL DEL PARO", MOTIVOS_PARO_LIST)
+
+    # Motivo principal del paro ubicado de forma independiente abajo para mantener simetría perfecta
+    st.markdown("---")
+    motivo_paro = st.selectbox("MOTIVO PRINCIPAL DEL PARO", MOTIVOS_PARO_LIST)
 
 st.markdown("---")
 
@@ -707,10 +709,10 @@ if os.path.exists(ARCHIVO_EXCEL):
 else:
     st.info(f"Aún no hay registros consolidados para Planta {planta_seleccionada}.")
 
-# Pie de página
+# Pie de página actualizado según requerimiento
 st.markdown("""
     <div class="footer-credits">
-        Desarrollado por <span>Tatiana Almario • Asistente de Costos y Métodos</span>
+        Desarrollado por <span>Tatiana Almario • Asistente de Costos</span>
     </div>
 """, unsafe_allow_html=True)
 
