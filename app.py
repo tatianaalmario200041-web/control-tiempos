@@ -50,7 +50,7 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS Compactos y Proporcionados
+# Estilos CSS Compactos y Proporcionados con Botones Estilizados
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -131,33 +131,33 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    /* TARJETAS DE CRONÓMETRO EXTRA COMPACTAS (SLIM GRID) */
-    .timer-card-slim {{
+    /* TARJETAS DE CRONÓMETRO CON BOTONES INTEGRADOS COMPACTOS */
+    .timer-card-compact {{
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        padding: 8px 12px;
-        margin-bottom: 6px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }}
 
-    .timer-card-slim-active {{
+    .timer-card-compact-active {{
         background: #ffffff;
         border: 1.5px solid {COLOR_ACCENT};
-        border-radius: 6px;
-        padding: 8px 12px;
-        margin-bottom: 6px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }}
 
-    .timer-header-slim {{
+    .timer-top-line {{
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 2px;
+        margin-bottom: 6px;
     }}
 
-    .timer-title-slim {{
+    .timer-title-text {{
         font-size: 10px;
         font-weight: 800;
         color: #64748b;
@@ -185,26 +185,35 @@ st.markdown(f"""
         gap: 6px;
     }}
 
-    .digits-slim {{
+    .digits-compact {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 22px;
+        font-size: 26px;
         font-weight: 700;
         color: #1e293b;
         line-height: 1;
     }}
 
-    .digits-slim-active {{
+    .digits-compact-active {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 22px;
+        font-size: 26px;
         font-weight: 700;
         color: {COLOR_RUNNING_TEXT};
         line-height: 1;
     }}
 
-    .unit-slim {{
+    .unit-compact {{
         font-size: 10px;
         font-weight: 600;
         color: #94a3b8;
+    }}
+
+    /* BOTONES ANGOSTOS Y COMPACTOS PARA CRONÓMETROS */
+    .stButton > button {{
+        border-radius: 5px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        padding: 4px 10px !important;
+        min-height: 32px !important;
     }}
 
     .section-header {{
@@ -482,7 +491,7 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (MÁXIMA COMPACIDAD Y PROPORCIÓN)
+# 4. CRONOMETRAJE EN VIVO (BOTONES ANGOSTOS INTEGRADOS)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
@@ -498,50 +507,52 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         minutos = int(tiempo_actual // 60)
         segundos = int(tiempo_actual % 60)
         
-        card_class = "timer-card-slim-active" if esta_corriendo else "timer-card-slim"
+        card_class = "timer-card-compact-active" if esta_corriendo else "timer-card-compact"
         pill_class = "pill-active" if esta_corriendo else "pill-idle"
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
-        digits_class = "digits-slim-active" if esta_corriendo else "digits-slim"
+        digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
-        # Ajuste de proporciones exactas para evitar cajas vacías y anchas
-        c_info, c_btn1, c_btn2 = st.columns([2.2, 1.2, 0.6])
+        # Estructura limpia de 2 columnas: Datos (Izquierda) + Botones Angostos (Derecha)
+        col_display, col_controls = st.columns([2.8, 1.2])
         
-        with c_info:
+        with col_display:
             st.markdown(f'''
                 <div class="{card_class}">
-                    <div class="timer-header-slim">
-                        <span class="timer-title-slim">{nombre}</span>
+                    <div class="timer-top-line">
+                        <span class="timer-title-text">{nombre}</span>
                         <span class="{pill_class}">{pill_text}</span>
                     </div>
                     <div class="display-row">
                         <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
-                        <span class="unit-slim">min</span>
+                        <span class="unit-compact">min</span>
                     </div>
                 </div>
             ''', unsafe_allow_html=True)
 
-        with c_btn1:
+        with col_controls:
             st.write("") # Alineación vertical fina
-            label_btn = "PAUSAR" if esta_corriendo else "INICIAR"
-            tipo_btn = "primary" if not esta_corriendo else "secondary"
+            btn_play, btn_rst = st.columns([2, 1])
             
-            if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn, use_container_width=True):
-                if esta_corriendo:
-                    st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
+            with btn_play:
+                label_btn = "PAUSAR" if esta_corriendo else "INICIAR"
+                tipo_btn = "primary" if not esta_corriendo else "secondary"
+                
+                if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn):
+                    if esta_corriendo:
+                        st.session_state[f"tiempo_{clave}"] += time.time() - st.session_state[f"inicio_{clave}"]
+                        st.session_state[f"corriendo_{clave}"] = False
+                        st.session_state[f"inicio_{clave}"] = None
+                    else:
+                        st.session_state[f"inicio_{clave}"] = time.time()
+                        st.session_state[f"corriendo_{clave}"] = True
+                    st.rerun()
+
+            with btn_rst:
+                if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro"):
+                    st.session_state[f"tiempo_{clave}"] = 0.0
                     st.session_state[f"corriendo_{clave}"] = False
                     st.session_state[f"inicio_{clave}"] = None
-                else:
-                    st.session_state[f"inicio_{clave}"] = time.time()
-                    st.session_state[f"corriendo_{clave}"] = True
-                st.rerun()
-
-        with c_btn2:
-            st.write("") # Alineación vertical fina
-            if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
-                st.session_state[f"tiempo_{clave}"] = 0.0
-                st.session_state[f"corriendo_{clave}"] = False
-                st.session_state[f"inicio_{clave}"] = None
-                st.rerun()
+                    st.rerun()
                 
         return round(tiempo_actual / 60.0, 2)
 
@@ -703,7 +714,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Bucle de refresco en vivo
+# Bucle de refresco constante en vivo
 if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
     time.sleep(1)
     st.rerun()
