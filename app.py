@@ -50,10 +50,10 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS de Alta Precision - Alineación Total de Altura
+# Estilos CSS de Alta Precisión - Simetría y Altura Empatada
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {{
         font-family: 'Plus Jakarta Sans', sans-serif;
@@ -131,13 +131,13 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    /* TARJETAS Y ALINEACIÓN DE ALTURA TOTAL */
+    /* TARJETAS CON ALTURA TOTAL EMPATADA */
     .timer-card-perfect {{
         background: #ffffff;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
         padding: 8px 14px;
-        height: 62px;
+        height: 56px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -149,7 +149,7 @@ st.markdown(f"""
         border: 2px solid {COLOR_ACCENT};
         border-radius: 8px;
         padding: 8px 14px;
-        height: 62px;
+        height: 56px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -193,7 +193,7 @@ st.markdown(f"""
 
     .digits-compact {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 800;
         color: #0f172a;
         line-height: 1;
@@ -201,7 +201,7 @@ st.markdown(f"""
 
     .digits-compact-active {{
         font-family: 'JetBrains Mono', monospace;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 800;
         color: {COLOR_RUNNING_TEXT};
         line-height: 1;
@@ -213,7 +213,7 @@ st.markdown(f"""
         color: #64748b;
     }}
 
-    /* REGLA MAESTRA: BOTONES CON ALTURA Y MARGEN EMPATADO */
+    /* IGUALACIÓN RIGUROSA DE ALTURA Y MARGEN DE BOTONES */
     div[data-testid="column"] .stButton {{
         margin-top: 0px !important;
         margin-bottom: 0px !important;
@@ -221,10 +221,10 @@ st.markdown(f"""
 
     div[data-testid="column"] .stButton > button {{
         border-radius: 8px !important;
-        font-size: 12px !important;
+        font-size: 11px !important;
         font-weight: 800 !important;
         letter-spacing: 0.5px !important;
-        height: 62px !important;
+        height: 56px !important;
         padding: 0px !important;
         display: flex !important;
         align-items: center !important;
@@ -232,9 +232,8 @@ st.markdown(f"""
         box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     }}
 
-    /* Separación entre filas de cronómetros */
     .row-spacer {{
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }}
 
     .section-header {{
@@ -512,7 +511,7 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (ALINEACIÓN DE ALTURA PERFECTA)
+# 4. CRONOMETRAJE EN VIVO (SIMETRÍA Y ALTURA PAREJA)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
@@ -533,7 +532,6 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
         digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
-        # Grid calibrado: Módulo de tiempo + Botón Iniciar (Ancho y Alto parejo) + Botón Reiniciar
         c_digits, c_btn_play, c_btn_rst = st.columns([2.5, 1.2, 0.4])
         
         with c_digits:
@@ -571,7 +569,6 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                 st.session_state[f"inicio_{clave}"] = None
                 st.rerun()
                 
-        # Separador visual entre filas
         st.markdown('<div class="row-spacer"></div>', unsafe_allow_html=True)
         return round(tiempo_actual / 60.0, 2)
 
