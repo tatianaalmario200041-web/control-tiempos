@@ -36,9 +36,6 @@ if planta_seleccionada == "Metalmecánica":
     COLOR_BADGE_BG = "rgba(56, 189, 248, 0.18)"
     COLOR_BADGE_TEXT = "#38bdf8"
     COLOR_BADGE_BORDER = "rgba(56, 189, 248, 0.4)"
-    COLOR_RUNNING_BG = "#f0f9ff"
-    COLOR_RUNNING_BORDER = "#0284c7"
-    COLOR_RUNNING_SHADOW = "rgba(2, 132, 199, 0.15)"
     COLOR_HEADER_BG = "#f0f9ff"
     COLOR_HEADER_BORDER = "#0284c7"
     COLOR_HEADER_TEXT = "#0369a1"
@@ -49,16 +46,13 @@ else:  # Maderas
     COLOR_BADGE_BG = "rgba(249, 115, 22, 0.18)"
     COLOR_BADGE_TEXT = "#f97316"
     COLOR_BADGE_BORDER = "rgba(249, 115, 22, 0.4)"
-    COLOR_RUNNING_BG = "#fff7ed"
-    COLOR_RUNNING_BORDER = "#f97316"
-    COLOR_RUNNING_SHADOW = "rgba(249, 115, 22, 0.15)"
     COLOR_HEADER_BG = "#fff7ed"
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#9a3412"
     COLOR_PRIMARY_BTN = "#ea580c"
     COLOR_PRIMARY_HOVER = "#c2410c"
 
-# Estilos CSS Nivel Corporativo Dinámicos
+# Estilos CSS Nivel Corporativo Avanzado
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -145,45 +139,94 @@ st.markdown(f"""
         border-color: {COLOR_PRIMARY_HOVER} !important;
     }}
 
-    /* Cards de Cronómetro */
-    .timer-card {{
+    /* DISEÑO REVOLUCIONARIO DE DÍGITOS Y TARJETAS DE CRONÓMETRO */
+    .timer-box-container {{
         background: #ffffff;
-        border: 1px solid #e7e5e4;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }}
-    
-    .timer-card-running {{
-        background: {COLOR_RUNNING_BG};
-        border: 2px solid {COLOR_RUNNING_BORDER};
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 10px {COLOR_RUNNING_SHADOW};
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        transition: all 0.2s ease-in-out;
     }}
 
-    .timer-label {{
+    .timer-box-running {{
+        background: #f0fdf4;
+        border: 2px solid #16a34a;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+        transition: all 0.2s ease-in-out;
+    }}
+
+    .timer-header-flex {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }}
+
+    .timer-title {{
         font-size: 11px;
         font-weight: 800;
-        color: #57534e;
+        color: #475569;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.5px;
     }}
-    
-    .timer-digits {{
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 28px;
+
+    .status-pill-idle {{
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 9px;
         font-weight: 800;
-        color: #1c1917;
-        margin: 2px 0 6px 0;
+        padding: 2px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
     }}
-    
-    .timer-unit {{
-        font-size: 12px;
-        font-weight: 600;
-        color: #78716c;
+
+    .status-pill-active {{
+        background: #dcfce7;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+        font-size: 9px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }}
+
+    .digital-display {{
+        background: #0f172a;
+        border-radius: 6px;
+        padding: 8px 14px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }}
+
+    .digits-text {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 32px;
+        font-weight: 800;
+        color: #38bdf8;
+        letter-spacing: 1px;
+    }}
+
+    .digits-text-active {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 32px;
+        font-weight: 800;
+        color: #4ade80;
+        letter-spacing: 1px;
+    }}
+
+    .unit-text {{
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
     }}
 
     .section-header {{
@@ -462,7 +505,7 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO
+# 4. CRONOMETRAJE EN VIVO (DISEÑO RE-DISEÑADO PROFESIONAL)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
@@ -478,12 +521,21 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         minutos = int(tiempo_actual // 60)
         segundos = int(tiempo_actual % 60)
         
-        card_class = "timer-card-running" if esta_corriendo else "timer-card"
+        box_class = "timer-box-running" if esta_corriendo else "timer-box-container"
+        pill_class = "status-pill-active" if esta_corriendo else "status-pill-idle"
+        pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
+        digits_class = "digits-text-active" if esta_corriendo else "digits-text"
         
         st.markdown(f'''
-            <div class="{card_class}">
-                <div class="timer-label">{nombre}</div>
-                <div class="timer-digits">{minutos:02d}:{segundos:02d} <span class="timer-unit">min</span></div>
+            <div class="{box_class}">
+                <div class="timer-header-flex">
+                    <span class="timer-title">{nombre}</span>
+                    <span class="{pill_class}">{pill_text}</span>
+                </div>
+                <div class="digital-display">
+                    <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
+                    <span class="unit-text">MINUTO(S)</span>
+                </div>
             </div>
         ''', unsafe_allow_html=True)
         
@@ -504,7 +556,7 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                 st.rerun()
 
         with b_reset:
-            if st.button("RESET", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
+            if st.button("REINICIAR", key=f"reset_{clave}", help="Reiniciar contador a cero", use_container_width=True):
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
                 st.session_state[f"inicio_{clave}"] = None
@@ -516,14 +568,14 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
     with col_left:
         st.markdown('<div class="section-header">TIEMPOS PRODUCTIVOS</div>', unsafe_allow_html=True)
-        t_setup = render_cronometro("SETUP / MONTAJE (MIN)", "Setup")
-        t_ciclo = render_cronometro("CICLO REAL (MIN)", "Ciclo Real")
-        t_descargue = render_cronometro("DESCARGUE / POSTCORTE (MIN)", "Descargue")
+        t_setup = render_cronometro("SETUP / MONTAJE", "Setup")
+        t_ciclo = render_cronometro("CICLO REAL DE OPERACIÓN", "Ciclo Real")
+        t_descargue = render_cronometro("DESCARGUE / POSTCORTE", "Descargue")
 
     with col_right:
         st.markdown('<div class="section-header-red">TIEMPOS IMPRODUCTIVOS / PAROS</div>', unsafe_allow_html=True)
-        t_espera = render_cronometro("OPERARIO EN ESPERA (MIN)", "Espera Operario")
-        t_paros = render_cronometro("MUERTO / PARO MÁQUINA (MIN)", "Paros")
+        t_espera = render_cronometro("OPERARIO EN ESPERA", "Espera Operario")
+        t_paros = render_cronometro("MUERTO / PARO MÁQUINA", "Paros")
         motivo_paro = st.selectbox("MOTIVO PRINCIPAL DEL PARO", MOTIVOS_PARO_LIST)
 
 st.markdown("---")
@@ -670,7 +722,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Bucle de refresco
+# Bucle de refresco en vivo constante
 if any(st.session_state[f"corriendo_{c}"] for c in cronometros):
     time.sleep(1)
     st.rerun()
