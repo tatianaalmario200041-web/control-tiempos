@@ -28,7 +28,7 @@ st.set_page_config(
 if "planta_activa" not in st.session_state:
     st.session_state["planta_activa"] = "Metalmecánica"
 
-# Estilos CSS Nivel Ingeniería - Reducción de Espacios + Modernización UI
+# Estilos CSS Nivel Corporativo - Paleta Naranja Industrial y Cero Emojis
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -37,7 +37,7 @@ st.markdown("""
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
     
-    /* 1. ELIMINAR ESPACIO EN BLANCO SUPERIOR DE STREAMLIT */
+    /* Eliminar espacio superior nativo de Streamlit */
     [data-testid="stHeader"] {
         display: none !important;
     }
@@ -52,14 +52,12 @@ st.markdown("""
         display: none !important;
     }
 
-    /* 2. HEADER Y BARRA DE SELECCIÓN UNIFICADA */
+    /* Barra Superior Unificada Naranja */
     .top-bar-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+        border-left: 5px solid #f97316;
         padding: 12px 20px;
-        border-radius: 10px;
+        border-radius: 8px;
         color: white;
         margin-bottom: 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -67,130 +65,139 @@ st.markdown("""
 
     .main-title {
         color: #ffffff;
-        font-size: 19px;
+        font-size: 18px;
         font-weight: 800;
-        letter-spacing: -0.3px;
+        letter-spacing: 0.2px;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        text-transform: uppercase;
     }
 
     .sub-title {
-        color: #94a3b8;
+        color: #a8a29e;
         font-size: 11px;
         font-weight: 500;
-        margin-top: 2px;
+        margin-top: 3px;
     }
 
-    .badge-metal {
-        background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
-        border: 1px solid rgba(56, 189, 248, 0.4);
-        padding: 3px 8px;
-        border-radius: 6px;
+    .badge-plant {
+        background: rgba(249, 115, 22, 0.18);
+        color: #f97316;
+        border: 1px solid rgba(249, 115, 22, 0.4);
+        padding: 3px 10px;
+        border-radius: 4px;
         font-size: 11px;
         font-weight: 800;
+        letter-spacing: 0.5px;
     }
 
-    .badge-maderas {
-        background: rgba(245, 158, 11, 0.15);
-        color: #fbbf24;
-        border: 1px solid rgba(245, 158, 11, 0.4);
-        padding: 3px 8px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 800;
-    }
-
-    /* Estilos para Botones de Switcher de Planta */
+    /* Botones de Selección de Planta */
     div[data-testid="stHorizontalBlock"] .stButton > button {
-        border-radius: 8px !important;
+        border-radius: 6px !important;
         font-weight: 800 !important;
         font-size: 12px !important;
-        height: 38px !important;
+        height: 42px !important;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.5px;
+    }
+
+    /* Estilos Primarios en Naranja */
+    button[kind="primary"] {
+        background-color: #ea580c !important;
+        border-color: #ea580c !important;
+        color: #ffffff !important;
+    }
+    
+    button[kind="primary"]:hover {
+        background-color: #c2410c !important;
+        border-color: #c2410c !important;
     }
 
     /* Cards de Cronómetro */
     .timer-card {
         background: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
+        border: 1px solid #e7e5e4;
+        border-radius: 8px;
         padding: 12px;
         margin-bottom: 10px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
     
     .timer-card-running {
-        background: #f0fdf4;
-        border: 2px solid #22c55e;
-        border-radius: 10px;
+        background: #fff7ed;
+        border: 2px solid #f97316;
+        border-radius: 8px;
         padding: 12px;
         margin-bottom: 10px;
-        box-shadow: 0 4px 10px rgba(34, 197, 94, 0.12);
+        box-shadow: 0 4px 10px rgba(249, 115, 22, 0.15);
     }
 
     .timer-label {
         font-size: 11px;
         font-weight: 800;
-        color: #475569;
+        color: #57534e;
         text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
     
     .timer-digits {
         font-family: 'JetBrains Mono', monospace;
         font-size: 28px;
         font-weight: 800;
-        color: #0f172a;
+        color: #1c1917;
         margin: 2px 0 6px 0;
     }
     
     .timer-unit {
         font-size: 12px;
         font-weight: 600;
-        color: #64748b;
+        color: #78716c;
     }
 
     .section-header {
-        background-color: #f1f5f9;
-        border-left: 4px solid #0284c7;
+        background-color: #fff7ed;
+        border-left: 4px solid #ea580c;
         padding: 6px 12px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
-        color: #0f172a;
-        border-radius: 0 6px 6px 0;
+        color: #9a3412;
+        border-radius: 0 4px 4px 0;
         margin-bottom: 12px;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
     .section-header-red {
         background-color: #fef2f2;
         border-left: 4px solid #dc2626;
         padding: 6px 12px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
         color: #991b1b;
-        border-radius: 0 6px 6px 0;
+        border-radius: 0 4px 4px 0;
         margin-bottom: 12px;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .footer-credits {
         text-align: center;
         padding: 12px;
         margin-top: 20px;
-        background: #f8fafc;
-        border-top: 1px solid #e2e8f0;
+        background: #fafaf9;
+        border-top: 1px solid #e7e5e4;
         border-radius: 6px;
-        color: #64748b;
-        font-size: 12px;
+        color: #78716c;
+        font-size: 11px;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
     
     .footer-credits span {
-        color: #0284c7;
+        color: #ea580c;
         font-weight: 800;
     }
     </style>
@@ -199,26 +206,29 @@ st.markdown("""
 # ---------------------------------------------------------
 # 1. HEADER COMPACTO Y SELECTOR DE PLANTA
 # ---------------------------------------------------------
-col_head, col_sw1, col_sw2 = st.columns([2.5, 1, 1])
+col_head, col_sw1, col_sw2 = st.columns([2.4, 1, 1])
 
 planta_seleccionada = st.session_state["planta_activa"]
 
 with col_sw1:
-    if st.button("⚙️ PLANTA METALMECÁNICA", use_container_width=True, type="primary" if planta_seleccionada == "Metalmecánica" else "secondary"):
+    if st.button("PLANTA METALMECÁNICA", use_container_width=True, type="primary" if planta_seleccionada == "Metalmecánica" else "secondary"):
         st.session_state["planta_activa"] = "Metalmecánica"
         st.rerun()
 
 with col_sw2:
-    if st.button("🪵 PLANTA DE MADERAS", use_container_width=True, type="primary" if planta_seleccionada == "Maderas" else "secondary"):
+    if st.button("PLANTA DE MADERAS", use_container_width=True, type="primary" if planta_seleccionada == "Maderas" else "secondary"):
         st.session_state["planta_activa"] = "Maderas"
         st.rerun()
 
 with col_head:
-    badge_html = f'<span class="badge-metal">⚙️ METALMECÁNICA</span>' if planta_seleccionada == "Metalmecánica" else f'<span class="badge-maderas">🪵 MADERAS</span>'
+    badge_text = "METALMECÁNICA" if planta_seleccionada == "Metalmecánica" else "MADERAS"
     st.markdown(f"""
         <div class="top-bar-container">
             <div>
-                <div class="main-title">⏱️ CONTROL DE TIEMPOS Y MÉTODOS {badge_html}</div>
+                <div class="main-title">
+                    CONTROL DE TIEMPOS Y MÉTODOS 
+                    <span class="badge-plant">{badge_text}</span>
+                </div>
                 <div class="sub-title">Captura en Vivo y Muestreo Estándar de Producción</div>
             </div>
         </div>
@@ -258,7 +268,7 @@ if planta_seleccionada == "Metalmecánica":
         "3.0 mm (1/8\")", 
         "4.5 mm (3/16\")", 
         "6.0 mm (1/4\")",
-        "✍️ OTRO / LIBRE (Escribir en vivo)"
+        "OTRO / LIBRE (Escribir en vivo)"
     ]
     MOTIVOS_PARO_LIST = [
         "Ninguno / Operación Normal",
@@ -307,7 +317,7 @@ else:
         "30 mm",
         "40 mm",
         "50 mm",
-        "✍️ OTRO / LIBRE (Escribir en vivo)"
+        "OTRO / LIBRE (Escribir en vivo)"
     ]
     MOTIVOS_PARO_LIST = [
         "Ninguno / Operación Normal",
@@ -375,11 +385,11 @@ def resetear_cronometros():
 # ---------------------------------------------------------
 # 3. FORMULARIO DE ORDEN DE TRABAJO (OP)
 # ---------------------------------------------------------
-with st.expander(f"📌 DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_seleccionada.upper()}", expanded=True):
+with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_seleccionada.upper()}", expanded=True):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        opciones_operario = ["Seleccionar...", "➕ Registrar Nuevo Operario..."] + st.session_state["lista_operarios"]
+        opciones_operario = ["Seleccionar...", "Registrar Nuevo Operario..."] + st.session_state["lista_operarios"]
         
         c_sel, c_del = st.columns([5, 1])
         with c_sel:
@@ -388,14 +398,14 @@ with st.expander(f"📌 DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selec
         with c_del:
             st.write("") 
             st.write("")
-            if operario_sel not in ["Seleccionar...", "➕ Registrar Nuevo Operario..."] and operario_sel:
-                if st.button("🗑️", help=f"Eliminar '{operario_sel}' de la lista guardada"):
+            if operario_sel not in ["Seleccionar...", "Registrar Nuevo Operario..."] and operario_sel:
+                if st.button("ELIMINAR", help=f"Eliminar '{operario_sel}' de la lista guardada"):
                     st.session_state["lista_operarios"].remove(operario_sel)
                     guardar_operarios(st.session_state["lista_operarios"])
-                    st.toast(f"🗑️ Operario '{operario_sel}' eliminado de la lista.")
+                    st.toast(f"Operario '{operario_sel}' eliminado de la lista.")
                     st.rerun()
 
-        if operario_sel == "➕ Registrar Nuevo Operario...":
+        if operario_sel == "Registrar Nuevo Operario...":
             operario = st.text_input("Nombre y Apellido Completo", placeholder="Ej: Juan Pérez").strip()
         elif operario_sel != "Seleccionar...":
             operario = operario_sel
@@ -414,7 +424,7 @@ with st.expander(f"📌 DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selec
 
     with col3:
         calibre_sel = st.selectbox("Espesor / Calibre", CALIBRES_LIST)
-        if calibre_sel == "✍️ OTRO / LIBRE (Escribir en vivo)":
+        if calibre_sel == "OTRO / LIBRE (Escribir en vivo)":
             calibre = st.text_input("Especificar Espesor Manual", placeholder="Ej: 15 mm / 5/8\"")
         else:
             calibre = calibre_sel
@@ -426,7 +436,7 @@ with st.expander(f"📌 DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selec
 # ---------------------------------------------------------
 # 4. CRONOMETRAJE EN VIVO
 # ---------------------------------------------------------
-with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
+with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
     def render_cronometro(nombre, clave):
         esta_corriendo = st.session_state[f"corriendo_{clave}"]
@@ -452,7 +462,7 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         b_toggle, b_reset = st.columns([3, 1])
         
         with b_toggle:
-            label_btn = "⏸ PAUSAR" if esta_corriendo else "▶ INICIAR"
+            label_btn = "PAUSAR" if esta_corriendo else "INICIAR"
             tipo_btn = "primary" if not esta_corriendo else "secondary"
             
             if st.button(label_btn, key=f"toggle_{clave}", type=tipo_btn, use_container_width=True):
@@ -466,7 +476,7 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                 st.rerun()
 
         with b_reset:
-            if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
+            if st.button("RESET", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
                 st.session_state[f"inicio_{clave}"] = None
@@ -477,13 +487,13 @@ with st.expander("⏱️ TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     col_left, col_right = st.columns(2)
     
     with col_left:
-        st.markdown('<div class="section-header">⚙️ TIEMPOS PRODUCTIVOS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">TIEMPOS PRODUCTIVOS</div>', unsafe_allow_html=True)
         t_setup = render_cronometro("SETUP / MONTAJE (MIN)", "Setup")
         t_ciclo = render_cronometro("CICLO REAL (MIN)", "Ciclo Real")
         t_descargue = render_cronometro("DESCARGUE / POSTCORTE (MIN)", "Descargue")
 
     with col_right:
-        st.markdown('<div class="section-header-red">⚠️ TIEMPOS IMPRODUCTIVOS / PAROS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header-red">TIEMPOS IMPRODUCTIVOS / PAROS</div>', unsafe_allow_html=True)
         t_espera = render_cronometro("OPERARIO EN ESPERA (MIN)", "Espera Operario")
         t_paros = render_cronometro("MUERTO / PARO MÁQUINA (MIN)", "Paros")
         motivo_paro = st.selectbox("MOTIVO PRINCIPAL DEL PARO", MOTIVOS_PARO_LIST)
@@ -493,11 +503,11 @@ st.markdown("---")
 # ---------------------------------------------------------
 # 5. GUARDADO DE REGISTRO EN EXCEL
 # ---------------------------------------------------------
-if st.button(f"💾 GUARDAR REGISTRO EN EXCEL (PLANTA {planta_seleccionada.upper()})", use_container_width=True, type="primary"):
+if st.button(f"GUARDAR REGISTRO EN EXCEL (PLANTA {planta_seleccionada.upper()})", use_container_width=True, type="primary"):
     if not orden or not maquina:
-        st.error("⚠️ Ingrese la 'Orden / OP' y seleccione la 'Máquina' para guardar.")
+        st.error("Ingrese la 'Orden / OP' y seleccione la 'Máquina' para guardar.")
     elif not operario:
-        st.error("⚠️ Ingrese o seleccione el nombre del 'Operario / Tomador de Tiempos'.")
+        st.error("Ingrese o seleccione el nombre del 'Operario / Tomador de Tiempos'.")
     else:
         if operario not in st.session_state["lista_operarios"]:
             st.session_state["lista_operarios"].append(operario)
@@ -547,7 +557,7 @@ if st.button(f"💾 GUARDAR REGISTRO EN EXCEL (PLANTA {planta_seleccionada.upper
         df_final = df_final.dropna(subset=["Orden"])
         df_final.to_excel(ARCHIVO_EXCEL, index=False)
         
-        st.success(f"✅ ¡Registro de la Orden {orden} en Planta {planta_seleccionada} guardado con éxito!")
+        st.success(f"Registro de la Orden {orden} en Planta {planta_seleccionada} guardado con éxito.")
 
         tiempo_total = float(t_setup) + float(t_ciclo) + float(t_descargue) + float(t_espera) + float(t_paros)
         tiempo_productivo = float(t_ciclo)
@@ -557,7 +567,7 @@ if st.button(f"💾 GUARDAR REGISTRO EN EXCEL (PLANTA {planta_seleccionada.upper
             eficiencia = (tiempo_productivo / tiempo_total) * 100
             desperdicio = (tiempo_improductivo / tiempo_total) * 100
             
-            st.markdown('<div class="section-header">📈 ANÁLISIS DE EFICIENCIA DEL REGISTRO CAPTURADO</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">ANÁLISIS DE EFICIENCIA DEL REGISTRO CAPTURADO</div>', unsafe_allow_html=True)
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Tiempo Total Operativo", f"{tiempo_total:.1f} min")
             m2.metric("Tiempo Productivo", f"{tiempo_productivo:.1f} min")
@@ -570,7 +580,7 @@ if st.button(f"💾 GUARDAR REGISTRO EN EXCEL (PLANTA {planta_seleccionada.upper
 # ---------------------------------------------------------
 # 6. HISTORIAL Y EXPORTACIÓN
 # ---------------------------------------------------------
-st.markdown(f'<div class="section-header">📊 HISTORIAL Y MATRIZ DE TIEMPOS - PLANTA {planta_seleccionada.upper()}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="section-header">HISTORIAL Y MATRIZ DE TIEMPOS - PLANTA {planta_seleccionada.upper()}</div>', unsafe_allow_html=True)
 
 if os.path.exists(ARCHIVO_EXCEL):
     df_ver = pd.read_excel(ARCHIVO_EXCEL)
@@ -582,13 +592,13 @@ if os.path.exists(ARCHIVO_EXCEL):
     st.dataframe(df_ver_limpio, use_container_width=True, hide_index=True)
     
     st.markdown("---")
-    st.markdown("🔒 **DEPARTAMENTO DE COSTOS - Base de datos protegida**")
+    st.markdown("DEPARTAMENTO DE COSTOS - Base de datos protegida")
     
     col_pass, col_btn = st.columns([1, 2])
     
     with col_pass:
-        clave_ingresada = st.text_input("Ingresa el PIN de autorización para descargar:", type="password", placeholder="Ingresa PIN aquí...", key="pin_download")
-        borrar_tras_descarga = st.checkbox("🧹 Limpiar / Borrar historial tras exportar", value=True)
+        clave_ingresada = st.text_input("Ingresa el PIN de autorización para descargar:", type="password", placeholder="Ingresa PIN...", key="pin_download")
+        borrar_tras_descarga = st.checkbox("Limpiar / Borrar historial tras exportar", value=True)
 
     with col_btn:
         st.write("") 
@@ -602,7 +612,7 @@ if os.path.exists(ARCHIVO_EXCEL):
             nombre_archivo_descarga = f"Registro_{planta_seleccionada.replace(' ', '_')}_{datetime.date.today()}.xlsx"
             
             descargado = st.download_button(
-                label=f"📥 DESCARGAR MATRIZ {planta_seleccionada.upper()}",
+                label=f"DESCARGAR MATRIZ {planta_seleccionada.upper()}",
                 data=buffer,
                 file_name=nombre_archivo_descarga,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -613,14 +623,14 @@ if os.path.exists(ARCHIVO_EXCEL):
             if descargado and borrar_tras_descarga:
                 if os.path.exists(ARCHIVO_EXCEL):
                     os.remove(ARCHIVO_EXCEL)
-                st.success(f"🧹 Historial de Planta {planta_seleccionada} borrado correctamente.")
+                st.success(f"Historial de Planta {planta_seleccionada} borrado correctamente.")
                 time.sleep(1)
                 st.rerun()
 
         elif clave_ingresada != "":
-            st.error("❌ PIN incorrecto. Acceso denegado.")
+            st.error("PIN incorrecto. Acceso denegado.")
         else:
-            st.warning("🔑 Ingresa la contraseña autorizada para habilitar la descarga.")
+            st.warning("Ingresa la contraseña autorizada para habilitar la descarga.")
 
 else:
     st.info(f"Aún no hay registros consolidados para Planta {planta_seleccionada}.")
