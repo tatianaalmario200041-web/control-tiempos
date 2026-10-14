@@ -50,7 +50,7 @@ else:  # Maderas
     COLOR_HEADER_BORDER = "#ea580c"
     COLOR_HEADER_TEXT = "#1c1917"
 
-# Estilos CSS de Alta Precisión - Fuentes Elegantes y Contenedores Sólidos
+# Estilos CSS Limpios y Profesionales
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
@@ -115,29 +115,13 @@ st.markdown(f"""
         letter-spacing: 0.5px;
     }}
 
-    /* Switcher de Planta */
-    div[data-testid="stHorizontalBlock"] .stButton > button {{
-        border-radius: 6px !important;
-        font-weight: 700 !important;
-        font-size: 11px !important;
-        height: 38px !important;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }}
-
-    button[kind="primary"] {{
-        background-color: {COLOR_ACCENT} !important;
-        border-color: {COLOR_ACCENT} !important;
-        color: #ffffff !important;
-    }}
-
-    /* TARJETAS CON TIPOGRAFÍA ELEGANTE Y COMPACTA */
+    /* TARJETAS DE TIEMPO INTEGRADAS */
     .timer-card-perfect {{
         background: #ffffff;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
-        padding: 8px 14px;
-        height: 60px;
+        padding: 10px 14px;
+        height: 64px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -148,8 +132,8 @@ st.markdown(f"""
         background: #ffffff;
         border: 2px solid {COLOR_ACCENT};
         border-radius: 8px;
-        padding: 8px 14px;
-        height: 60px;
+        padding: 10px 14px;
+        height: 64px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -218,13 +202,14 @@ st.markdown(f"""
     .prev-val-text {{
         font-size: 9px;
         font-weight: 600;
-        color: #64748b;
+        color: #475569;
         background: #f1f5f9;
-        padding: 1px 5px;
-        border-radius: 3px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
     }}
 
-    /* BOTONES DE CONTROL EMPATADOS EN ALTURA */
+    /* BOTONES DE CONTROL */
     div[data-testid="column"] .stButton {{
         margin-top: 0px !important;
         margin-bottom: 0px !important;
@@ -235,7 +220,7 @@ st.markdown(f"""
         font-size: 11px !important;
         font-weight: 800 !important;
         letter-spacing: 0.5px !important;
-        height: 60px !important;
+        height: 64px !important;
         padding: 0px !important;
         display: flex !important;
         align-items: center !important;
@@ -244,7 +229,7 @@ st.markdown(f"""
     }}
 
     .row-spacer {{
-        margin-bottom: 8px;
+        margin-bottom: 12px;
     }}
 
     .section-header {{
@@ -525,7 +510,7 @@ with st.expander(f"DATOS DE LA ORDEN DE TRABAJO (OP) - PLANTA {planta_selecciona
         tiempo_estandar = st.number_input("Tiempo Estándar (Min)", min_value=0.0, step=0.1, value=0.0)
 
 # ---------------------------------------------------------
-# 4. CRONOMETRAJE EN VIVO (CON MEMORIA DE RESET Y NÚMEROS ELEGANTES)
+# 4. CRONOMETRAJE EN VIVO (TARJETAS 100% LIMPIAS SIN DIVS SUELTOS)
 # ---------------------------------------------------------
 with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
     
@@ -547,17 +532,18 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
         pill_text = "EN PROCESO" if esta_corriendo else "DETENIDO"
         digits_class = "digits-compact-active" if esta_corriendo else "digits-compact"
         
-        # Formatear el texto del valor previo si existe
+        # Formato de valor previo limpio
         if valor_previo is not None and valor_previo > 0:
             m_prev = int(valor_previo // 60)
             s_prev = int(valor_previo % 60)
-            prev_html = f'<span class="prev-val-text" title="Último valor registrado antes de reiniciar">Último: {m_prev:02d}:{s_prev:02d}</span>'
+            prev_txt = f"Último: {m_prev:02d}:{s_prev:02d}"
         else:
-            prev_html = ''
+            prev_txt = ""
 
         c_digits, c_btn_play, c_btn_rst = st.columns([2.5, 1.2, 0.4])
         
         with c_digits:
+            prev_block = f'<span class="prev-val-text">{prev_txt}</span>' if prev_txt else ''
             st.markdown(f'''
                 <div class="{card_class}">
                     <div class="timer-top-line">
@@ -569,7 +555,7 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
                             <span class="{digits_class}">{minutos:02d}:{segundos:02d}</span>
                             <span class="unit-compact">min</span>
                         </div>
-                        {prev_html}
+                        {prev_block}
                     </div>
                 </div>
             ''', unsafe_allow_html=True)
@@ -590,12 +576,11 @@ with st.expander("TOMADOR DE TIEMPOS EN VIVO", expanded=True):
 
         with c_btn_rst:
             if st.button("🔄", key=f"reset_{clave}", help="Reiniciar cronómetro", use_container_width=True):
-                # Guardar el último valor acumulado antes de borrar
                 st.session_state[f"previo_{clave}"] = tiempo_actual
                 st.session_state[f"tiempo_{clave}"] = 0.0
                 st.session_state[f"corriendo_{clave}"] = False
                 st.session_state[f"inicio_{clave}"] = None
-                st.toast(f"Cronómetro {nombre} reiniciado. Se guardó respaldo previo.")
+                st.toast(f"Respaldo guardado para {nombre}")
                 st.rerun()
                 
         st.markdown('<div class="row-spacer"></div>', unsafe_allow_html=True)
