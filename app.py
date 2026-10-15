@@ -169,11 +169,14 @@ CONFIG_PLANTAS = {
     }
 }
 
-# Variable auxiliar para el color dinámico actual según la planta seleccionada
-planta_actual_ini = st.session_state.get("planta_actual", "Metalmecánica")
-COLOR_ACTIVO = CONFIG_PLANTAS[planta_actual_ini]["color_primario"]
-BG_BADGE_ACTIVO = CONFIG_PLANTAS[planta_actual_ini]["bg_badge"]
-TEXT_BADGE_ACTIVO = CONFIG_PLANTAS[planta_actual_ini]["text_badge"]
+# Inicialización segura de la planta actual para los estilos dinámicos
+if "planta_actual" not in st.session_state:
+    st.session_state["planta_actual"] = "Metalmecánica"
+
+planta_activa_ini = st.session_state["planta_actual"]
+COLOR_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["color_primario"]
+BG_BADGE_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["bg_badge"]
+TEXT_BADGE_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["text_badge"]
 
 # ============================================================
 # 3. ESTILOS CSS DE NIVEL INGENIERÍA INDUSTRIAL
@@ -202,7 +205,7 @@ html, body, [class*="css"] {{
     max-width: 1600px;
 }}
 
-/* Encabezado Técnico / Ejecutivo */
+/* Encabezado Técnico / Ejecutivo Dinámico */
 .engineering-header {{
     background: #0f172a;
     border-left: 5px solid {COLOR_ACTIVO};
@@ -211,7 +214,7 @@ html, body, [class*="css"] {{
     color: white;
     margin-bottom: 20px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
+}}
 
 .engineering-title {{
     font-size: 20px;
@@ -560,9 +563,6 @@ inicializar_estado("hora_inicio_registro", None)
 # 8. CONFIGURACIÓN EN BARRA LATERAL
 # ============================================================
 
-if "planta_actual" not in st.session_state:
-    st.session_state["planta_actual"] = "Metalmecánica"
-
 with st.sidebar:
     st.markdown("### Configuración de Planta")
     planta = st.radio(
@@ -642,7 +642,7 @@ with tab_registro:
             else:
                 operarios.append(nombre)
                 guardar_operarios(planta, operarios)
-                st.success(f"Operario registrado con éxito.")
+                st.success("Operario registrado con éxito.")
                 st.rerun()
 
     with col_op3:
@@ -688,7 +688,6 @@ with tab_registro:
 
     claves_cronometros = list(CRONOMETROS.keys())
 
-    # Renderizar en filas de 2 columnas para un diseño limpio y ordenado
     for inicio_fila in range(0, len(claves_cronometros), 2):
         columnas = st.columns(2)
         for idx_col, col_actual in enumerate(columnas):
@@ -735,7 +734,6 @@ with tab_registro:
                         st.session_state[f"{clave}_acumulado"] = 0.0
                         st.rerun()
 
-    # Refrescar pantalla en tiempo real si hay al menos un cronómetro corriendo
     if cronometros_activos_count() > 0:
         time.sleep(1)
         st.rerun()
