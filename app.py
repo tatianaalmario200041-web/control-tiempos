@@ -985,4 +985,223 @@ with tab_registro:
         if cronometro_activo():
             errores.append("Pausa todos los cronómetros antes de guardar.")
 
-        if tiempo_total_min <= 0
+        if tiempo_total_min <= 0:
+            errores.append("Registra al menos un tiempo antes de guardar.")
+
+        if errores:
+            for error in errores:
+                st.error(error)
+
+        else:
+            hora_inicio = (
+                st.session_state.get("hora_inicio_registro")
+                or obtener_hora_bogota()
+            )
+            hora_fin = obtener_hora_bogota()
+
+            if motivo_paro == "No aplica / Sin paro":
+                motivo_final = ""
+            else:
+                motivo_final = motivo_paro
+
+            registro = {
+                "Planta": planta,
+                "Operario": operario,
+                "Orden": orden.strip(),
+                "Fecha": fecha_registro.strftime("%Y-%m-%d"),
+                "Turno": turno,
+                "Máquina": maquina,
+                "Proyecto": proyecto.strip(),
+                "Detalle Pieza": detalle_pieza.strip(),
+                "Material": material,
+                "Espesor/Calibre": calibre_final,
+                "Cantidad Lote": int(cantidad_lote),
+                "Piezas OK": int(piezas_ok),
+                "Setup (min)": setup_min,
+                "Tiempo Estándar (min)": float(tiempo_estandar),
+                "Ciclo Real (min)": ciclo_min,
+                "Espera Operario (min)": espera_min,
+                "Paro Máquina (min)": paros_min,
+                "Descargue (min)": descargue_min,
+                "Motivo Paro": motivo_final,
+                "Hora Inicio": hora_inicio,
+                "Hora Fin": hora_fin
+            }
+
+            try:
+                guardar_registro(planta, registro)
+                st.success(
+                    f"Registro guardado correctamente en {ARCHIVOS_EXCEL[planta]}."
+                )
+                reiniciar_cronometros()
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"No se pudo guardar el registro: {e}")
+
+# ============================================================
+# 12. PESTAÑA DE HISTORIAL Y ANÁLISIS
+# ============================================================
+
+with tab_historial:
+
+    st.markdown(
+        '<div class="section-title">Historial de producción</div>',
+        unsafe_allow_html=True
+    )
+
+    st.caption(f"Archivo consultado: {ARCHIVOS_EXCEL[planta]}")
+
+    df_historial = leer_historial(planta)
+
+    if df_historial is not None:
+
+        if df_historial.empty:
+            st.info(
+                "Todavía no hay registros para esta planta. "
+                "Guarda una operación para comenzar el historial."
+            )
+
+        else:
+            col_f1, col_f2, col_f3 = st.columns(3)
+
+            with col_f1:
+                operadores_historial = sorted(
+                    df_historial["Operario"]
+                    .dropna()
+                    .astype(str)
+                    .unique()
+                    .tolist()
+                )
+
+                filtro_operario = st.selectbox(
+                    "Filtrar por operario",
+                    ["Todos"] + operadores_historial,
+                    key=f"filtro_operario_{planta}"
+                )
+
+            with col_f2:
+                maquinas_historial = sorted(
+                    df_historial["Máquina"]
+                    .dropna()
+                    .astype(str)
+                    .unique()
+                    .tolist()
+                )
+
+                filtro_maquina = st.selectbox(
+                    "Filtrar por máquina",
+                    ["Todas"] + maquinas_historial,
+                    key=f"filtro_maquina_{planta}"
+                )
+
+            with col_f3:
+                filtro_op = st.text_input(
+                    "Buscar orden de producción",
+                    placeholder="Escribe una OP",
+                    key=f"filtro_op_{planta}"
+                )
+
+            df_filtrado = df_historial.copy()
+
+            if filtro_operario != "Todos":
+                df_filtrado = df_filtrado[
+                    df_filtrado["Operario"].astype(str) == filtro_operario
+                ]
+
+            if filtro_maquina != "Todas":
+                df_filtrado = df_filtrado[
+                    df_filtrado["Máquina"].astype(str) == filtro_maquina
+                ]
+
+            if filtro_op.strip():
+                df_filtrado = df_filtrado[
+                    df_filtrado["Orden"]
+                    .astype(str)
+                    .str.contains(filtro_op.strip(), case=False, na=False)
+                ]
+
+            # Indicadores calculados a partir del historial filtrado
+            total_registros = len(df_filtrado)
+
+            if "Ciclo Real (min)" in df_filtrado.columns:
+                total_ciclo = pd.to_numeric(
+                    df_filtrado["Ciclo Real (min)"], errors="coerce"
+                ).fillna(0).sum()
+            else:
+                total_ciclo = 0
+
+            if "Paro Máquina (min)" in df_filtrado.columns:
+                total_paros = pd.to_numeric(
+                    df_filtrado["Paro Máquina (min)"], errors="coerce"
+                ).fillna(0).sum()
+            else:
+                total_paros = 0
+
+            if "Espera Operario (min)" in df_filtrado.columns:
+                total_espera = pd.to_numeric(
+                    df_filtrado["Espera Operario (min)"], errors="coerce"
+                ).fillna(0).sum()
+            else:
+                total_espera = 0
+
+            st.markdown("### Resumen del filtrado")
+            col_h1, col_h2, col_h3 = st.columns(3)
+            col_h1.metric("Registros encontrados", total_registros)
+            col_h2.metric("Total ciclo real", f"{total_ciclo:.2f} min")
+            col_h3.metric("Total paros/espera", f"{(total_paros + total_espera):.2f} min")
+
+            st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+
+            buffer_excel = crear_excel_en_memoria(df_filtrado)
+            st.download_button(
+                label="📥 Descargar datos filtrados en Excel",
+                data=buffer_excel,
+                file_name=f"Historial_{planta}_{datetime.date.today()}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+# ============================================================
+# 13. PESTAÑA DE ADMINISTRACIÓN
+# ============================================================
+
+with tab_administracion:
+    st.markdown(
+        '<div class="section-title">Administración y mantenimiento de datos</div>',
+        unsafe_allow_html=True
+    )
+
+    st.warning("Zona protegida para el manejo de registros de planta.")
+
+    pin_ingresado = st.text_input(
+        "Ingresa el PIN de seguridad para habilitar acciones de administración",
+        type="password",
+        key=f"pin_admin_{planta}"
+    )
+
+    if pin_ingresado == PIN_EXPORTACION:
+        st.success("PIN correcto. Acceso autorizado.")
+
+        if os.path.exists(ARCHIVOS_EXCEL[planta]):
+            with open(ARCHIVOS_EXCEL[planta], "rb") as archivo_binario:
+                st.download_button(
+                    label=f"📥 Descargar base de datos completa ({planta})",
+                    data=archivo_binario,
+                    file_name=ARCHIVOS_EXCEL[planta],
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+
+            if st.button("🗑️ Borrar historial de esta planta", type="secondary", use_container_width=True):
+                try:
+                    os.remove(ARCHIVOS_EXCEL[planta])
+                    st.success("Historial eliminado correctamente.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"No se pudo eliminar el archivo: {e}")
+        else:
+            st.info("No hay archivo de base de datos creado todavía para esta planta.")
+
+    elif pin_ingresado != "":
+        st.error("PIN incorrecto.")
