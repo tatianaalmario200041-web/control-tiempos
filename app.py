@@ -12,8 +12,7 @@ import io
 # ============================================================
 
 st.set_page_config(
-    page_title="Industrial Process Timing & Methods",
-    page_icon="⚡",
+    page_title="TOMA DE TIEMPOS MODERLINE",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -366,16 +365,17 @@ html, body, [class*="css"] {{
     color: #64748b;
 }}
 
-/* Personalización Extrema de Botones de Streamlit según Planta */
-div[data-testid="column"] button[kind="primary"] {{
+/* Forzar color exacto de la planta en los botones de Iniciar y de Acción Principal */
+div.stButton > button[kind="primary"] {{
     background-color: {COLOR_PRI} !important;
     border-color: {COLOR_PRI} !important;
     color: #ffffff !important;
 }}
 
-div[data-testid="column"] button[kind="primary"]:hover {{
+div.stButton > button[kind="primary"]:hover {{
     background-color: {COLOR_SEC} !important;
     border-color: {COLOR_SEC} !important;
+    color: #ffffff !important;
 }}
 
 div.stButton > button {{
@@ -621,7 +621,7 @@ st.markdown(
     f"""
     <div class="engineering-header" style="border-left-color: {config['color_primario']};">
         <div class="engineering-title">
-            Módulo de Toma de Tiempos y Control de Métodos
+            TOMA DE TIEMPOS MODERLINE
             <span class="plant-badge" style="background-color: {config['bg_badge']}; color: {config['text_badge']};">{planta.upper()}</span>
         </div>
         <div class="engineering-subtitle">Ingeniería de Costos y Procesos Industriales • Estándar Operativo</div>
