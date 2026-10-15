@@ -62,9 +62,11 @@ COLUMNAS_REGISTRO = [
 CONFIG_PLANTAS = {
     "Metalmecánica": {
         "color_primario": "#0284c7",      # Azul Cobalto Técnico
+        "color_secundario": "#0369a1",
         "bg_badge": "#f0f9ff",
         "text_badge": "#0369a1",
-        "bg_timer_active": "#f8fafc",
+        "bg_timer_active": "#f0f9ff",
+        "border_active": "#0284c7",
         "maquinas": [
             "Punzonadora Trumpf Trumatic 2000R",
             "Cortadora Láser CNC (MT 36) - F 3015",
@@ -116,9 +118,11 @@ CONFIG_PLANTAS = {
 
     "Maderas": {
         "color_primario": "#ea580c",      # Naranja Óxido Técnico
+        "color_secundario": "#c2410c",
         "bg_badge": "#fff7ed",
         "text_badge": "#c2410c",
         "bg_timer_active": "#fffaf5",
+        "border_active": "#ea580c",
         "maquinas": [
             "Prensa Hidráulica MH3848",
             "Canteadora E-700-3 Pro",
@@ -174,13 +178,17 @@ if "planta_actual" not in st.session_state:
     st.session_state["planta_actual"] = "Metalmecánica"
 
 planta_activa_ini = st.session_state["planta_actual"]
-COLOR_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["color_primario"]
-BG_BADGE_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["bg_badge"]
-TEXT_BADGE_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["text_badge"]
-BG_TIMER_ACTIVE = CONFIG_PLANTAS[planta_activa_ini]["bg_timer_active"]
+CFG = CONFIG_PLANTAS[planta_activa_ini]
+
+COLOR_PRI = CFG["color_primario"]
+COLOR_SEC = CFG["color_secundario"]
+BG_BADGE = CFG["bg_badge"]
+TXT_BADGE = CFG["text_badge"]
+BG_TIMER_ACT = CFG["bg_timer_active"]
+BORDER_ACT = CFG["border_active"]
 
 # ============================================================
-# 3. ESTILOS CSS DE NIVEL INGENIERÍA INDUSTRIAL
+# 3. ESTILOS CSS DE NIVEL INGENIERÍA INDUSTRIAL AVANZADA
 # ============================================================
 
 st.markdown(f"""
@@ -209,7 +217,7 @@ html, body, [class*="css"] {{
 /* Encabezado Técnico Dinámico */
 .engineering-header {{
     background: #0f172a;
-    border-left: 5px solid {COLOR_ACTIVO};
+    border-left: 5px solid {COLOR_PRI};
     padding: 22px 26px;
     border-radius: 8px;
     color: white;
@@ -229,8 +237,8 @@ html, body, [class*="css"] {{
 }}
 
 .plant-badge {{
-    background-color: {BG_BADGE_ACTIVO};
-    color: {TEXT_BADGE_ACTIVO};
+    background-color: {BG_BADGE};
+    color: {TXT_BADGE};
     padding: 4px 12px;
     border-radius: 4px;
     font-size: 11px;
@@ -259,7 +267,7 @@ html, body, [class*="css"] {{
     margin: 16px 0 12px 0;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    border-left: 3px solid {COLOR_ACTIVO};
+    border-left: 3px solid {COLOR_PRI};
 }}
 
 /* Tarjetas de Métricas Ejecutivas */
@@ -290,21 +298,22 @@ html, body, [class*="css"] {{
 
 /* Tarjetas de Cronómetros de Alta Precisión Mejoradas */
 .timer-card-eng {{
-    background: white;
+    background: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 10px;
     padding: 16px 20px;
     margin-bottom: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
 }}
 
 .timer-card-eng-active {{
-    background: {BG_TIMER_ACTIVE};
-    border: 2px solid {COLOR_ACTIVO};
+    background: {BG_TIMER_ACT};
+    border: 2px solid {BORDER_ACT};
     border-radius: 10px;
     padding: 16px 20px;
     margin-bottom: 8px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }}
 
 .timer-header-row {{
@@ -325,7 +334,7 @@ html, body, [class*="css"] {{
 .timer-status-idle {{
     font-size: 9px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     background: #f1f5f9;
     padding: 2px 8px;
     border-radius: 4px;
@@ -336,7 +345,7 @@ html, body, [class*="css"] {{
     font-size: 9px;
     font-weight: 800;
     color: #ffffff;
-    background: {COLOR_ACTIVO};
+    background: {COLOR_PRI};
     padding: 2px 8px;
     border-radius: 4px;
     text-transform: uppercase;
@@ -344,8 +353,8 @@ html, body, [class*="css"] {{
 
 .timer-digits-eng {{
     font-family: 'JetBrains Mono', monospace;
-    font-size: 30px;
-    font-weight: 600;
+    font-size: 32px;
+    font-weight: 500;
     color: #0f172a;
     letter-spacing: -0.5px;
     line-height: 1.1;
@@ -357,7 +366,18 @@ html, body, [class*="css"] {{
     color: #64748b;
 }}
 
-/* Botones de Estándar Industrial */
+/* Personalización Extrema de Botones de Streamlit según Planta */
+div[data-testid="column"] button[kind="primary"] {{
+    background-color: {COLOR_PRI} !important;
+    border-color: {COLOR_PRI} !important;
+    color: #ffffff !important;
+}}
+
+div[data-testid="column"] button[kind="primary"]:hover {{
+    background-color: {COLOR_SEC} !important;
+    border-color: {COLOR_SEC} !important;
+}}
+
 div.stButton > button {{
     border-radius: 6px !important;
     font-weight: 700 !important;
@@ -637,7 +657,7 @@ with tab_registro:
 
     with col_op2:
         nuevo_operario = st.text_input("Registrar Nuevo Operario", placeholder="Nombre y Apellido", key=f"nuevo_op_{planta}")
-        if st.button("Registrar Operario", key=f"btn_save_op_{planta}", use_container_width=True):
+        if st.button("Registrar Operario", key=f"btn_save_op_{planta}", use_container_width=True, type="primary"):
             nombre = nuevo_operario.strip()
             if not nombre:
                 st.warning("Ingrese el nombre del operario.")
@@ -750,9 +770,9 @@ with tab_registro:
     tiempos_seg = {clv: segundos_cronometro(clv) for clv in CRONOMETROS}
     setup_min = minutos_desde_segundos(tiempos_seg["setup"])
     ciclo_min = minutos_desde_segundos(tiempos_seg["ciclo"])
-    descargue_min = minutos_desde_segundos(tiempos_segundos["descargue"])
-    paros_min = minutos_desde_segundos(tiempos_segundos["paros"])
-    espera_min = minutos_desde_segundos(tiempos_segundos["espera"])
+    descargue_min = minutos_desde_segundos(tiempos_seg["descargue"])
+    paros_min = minutos_desde_segundos(tiempos_seg["paros"])
+    espera_min = minutos_desde_segundos(tiempos_seg["espera"])
 
     tiempo_total_min = round(setup_min + ciclo_min + descargue_min + paros_min + espera_min, 2)
     tiempo_productivo_min = ciclo_min
@@ -907,7 +927,8 @@ with tab_historial:
                 data=buffer_dl,
                 file_name=f"Reporte_{planta}_{datetime.date.today()}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
+                use_container_width=True,
+                type="primary"
             )
 
 # ============================================================
@@ -929,7 +950,8 @@ with tab_admin:
                     data=bin_file,
                     file_name=ARCHIVOS_EXCEL[planta],
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
+                    use_container_width=True,
+                    type="primary"
                 )
 
             if st.button("Eliminar / Reiniciar Historial de Planta", type="secondary", use_container_width=True):
