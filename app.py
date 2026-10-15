@@ -61,10 +61,10 @@ COLUMNAS_REGISTRO = [
 
 CONFIG_PLANTAS = {
     "Metalmecánica": {
-        "color_primario": "#0052cc",      # Azul Industrial Sobrio
-        "color_borde": "#0052cc",
-        "bg_badge": "#e6f0ff",
-        "text_badge": "#003d99",
+        "color_primario": "#0284c7",      # Azul Cobalto Técnico
+        "bg_badge": "#f0f9ff",
+        "text_badge": "#0369a1",
+        "bg_timer_active": "#f8fafc",
         "maquinas": [
             "Punzonadora Trumpf Trumatic 2000R",
             "Cortadora Láser CNC (MT 36) - F 3015",
@@ -115,10 +115,10 @@ CONFIG_PLANTAS = {
     },
 
     "Maderas": {
-        "color_primario": "#d97706",      # Naranja Óxido Técnico / Ámbar
-        "color_borde": "#d97706",
-        "bg_badge": "#fef3c7",
-        "text_badge": "#92400e",
+        "color_primario": "#ea580c",      # Naranja Óxido Técnico
+        "bg_badge": "#fff7ed",
+        "text_badge": "#c2410c",
+        "bg_timer_active": "#fffaf5",
         "maquinas": [
             "Prensa Hidráulica MH3848",
             "Canteadora E-700-3 Pro",
@@ -177,6 +177,7 @@ planta_activa_ini = st.session_state["planta_actual"]
 COLOR_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["color_primario"]
 BG_BADGE_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["bg_badge"]
 TEXT_BADGE_ACTIVO = CONFIG_PLANTAS[planta_activa_ini]["text_badge"]
+BG_TIMER_ACTIVE = CONFIG_PLANTAS[planta_activa_ini]["bg_timer_active"]
 
 # ============================================================
 # 3. ESTILOS CSS DE NIVEL INGENIERÍA INDUSTRIAL
@@ -205,7 +206,7 @@ html, body, [class*="css"] {{
     max-width: 1600px;
 }}
 
-/* Encabezado Técnico / Ejecutivo Dinámico */
+/* Encabezado Técnico Dinámico */
 .engineering-header {{
     background: #0f172a;
     border-left: 5px solid {COLOR_ACTIVO};
@@ -287,30 +288,30 @@ html, body, [class*="css"] {{
     letter-spacing: -0.5px;
 }}
 
-/* Tarjetas de Cronómetros de Alta Precisión */
+/* Tarjetas de Cronómetros de Alta Precisión Mejoradas */
 .timer-card-eng {{
     background: white;
     border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }}
 
 .timer-card-eng-active {{
-    background: white;
+    background: {BG_TIMER_ACTIVE};
     border: 2px solid {COLOR_ACTIVO};
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }}
 
 .timer-header-row {{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }}
 
 .timer-name-eng {{
@@ -318,36 +319,42 @@ html, body, [class*="css"] {{
     font-weight: 800;
     color: #334155;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
 }}
 
 .timer-status-idle {{
     font-size: 9px;
     font-weight: 700;
     color: #94a3b8;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
     text-transform: uppercase;
 }}
 
 .timer-status-active {{
     font-size: 9px;
     font-weight: 800;
-    color: {COLOR_ACTIVO};
+    color: #ffffff;
+    background: {COLOR_ACTIVO};
+    padding: 2px 8px;
+    border-radius: 4px;
     text-transform: uppercase;
 }}
 
 .timer-digits-eng {{
     font-family: 'JetBrains Mono', monospace;
-    font-size: 26px;
+    font-size: 30px;
     font-weight: 600;
     color: #0f172a;
     letter-spacing: -0.5px;
     line-height: 1.1;
+    margin: 4px 0;
 }}
 
 .timer-desc-eng {{
-    font-size: 10px;
+    font-size: 11px;
     color: #64748b;
-    margin-top: 2px;
 }}
 
 /* Botones de Estándar Industrial */
@@ -743,9 +750,9 @@ with tab_registro:
     tiempos_seg = {clv: segundos_cronometro(clv) for clv in CRONOMETROS}
     setup_min = minutos_desde_segundos(tiempos_seg["setup"])
     ciclo_min = minutos_desde_segundos(tiempos_seg["ciclo"])
-    descargue_min = minutos_desde_segundos(tiempos_seg["descargue"])
-    paros_min = minutos_desde_segundos(tiempos_seg["paros"])
-    espera_min = minutos_desde_segundos(tiempos_seg["espera"])
+    descargue_min = minutos_desde_segundos(tiempos_segundos["descargue"])
+    paros_min = minutos_desde_segundos(tiempos_segundos["paros"])
+    espera_min = minutos_desde_segundos(tiempos_segundos["espera"])
 
     tiempo_total_min = round(setup_min + ciclo_min + descargue_min + paros_min + espera_min, 2)
     tiempo_productivo_min = ciclo_min
