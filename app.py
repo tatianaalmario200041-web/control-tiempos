@@ -411,8 +411,77 @@ def inicializar_estado(clave, valor):
 
 
 # ============================================================
-# 5. GESTIÓN DE OPERARIOS
+# 5. GESTIÓN DE CRONÓMETROS Y OPERARIOS
 # ============================================================
+
+CRONOMETROS = {
+    "setup": {
+        "nombre": "Setup / Alistamiento",
+        "descripcion": "Preparación inicial y puesta a punto de máquina"
+    },
+    "ciclo": {
+        "nombre": "Ciclo Real Operativo",
+        "descripcion": "Tiempo efectivo de procesamiento y fabricación"
+    },
+    "descargue": {
+        "nombre": "Descargue y Post-Corte",
+        "descripcion": "Retiro, evacuación y despacho de piezas"
+    },
+    "paros": {
+        "nombre": "Paro / Tiempo Muerto de Máquina",
+        "descripcion": "Detenciones imprevistas o mecánicas"
+    },
+    "espera": {
+        "nombre": "Operario en Espera",
+        "descripcion": "Tiempos ociosos o espera de insumos"
+    }
+}
+
+
+def inicializar_cronometros():
+    for clave in CRONOMETROS:
+        inicializar_estado(f"{clave}_acumulado", 0.0)
+        inicializar_estado(f"{clave}_inicio", None)
+
+
+def segundos_cronometro(clave):
+    acumulado = float(st.session_state.get(f"{clave}_acumulado", 0.0))
+    inicio = st.session_state.get(f"{clave}_inicio")
+    if inicio is not None:
+        acumulado += time.time() - inicio
+    return max(0.0, acumulado)
+
+
+def cronometros_activos_count():
+    return sum(
+        1 for clave in CRONOMETROS
+        if st.session_state.get(f"{clave}_inicio") is not None
+    )
+
+
+def iniciar_cronometro(clave):
+    st.session_state[f"{clave}_inicio"] = time.time()
+    if not st.session_state.get("hora_inicio_registro"):
+        st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
+
+
+def pausar_cronometro(clave):
+    inicio = st.session_state.get(f"{clave}_inicio")
+    if inicio is not None:
+        st.session_state[f"{clave}_acumulado"] += time.time() - inicio
+        st.session_state[f"{clave}_inicio"] = None
+
+
+def reiniciar_cronometros():
+    for clave in CRONOMETROS:
+        st.session_state[f"{clave}_acumulado"] = 0.0
+        st.session_state[f"{clave}_inicio"] = None
+    st.session_state["hora_inicio_registro"] = None
+
+
+inicializar_cronometros()
+inicializar_estado("hora_inicio_registro", None)
+
 
 def cargar_operarios(planta):
     archivo = ARCHIVOS_OPERARIOS[planta]
@@ -488,79 +557,7 @@ def crear_excel_en_memoria(df):
 
 
 # ============================================================
-# 7. CRONÓMETROS SIMULTÁNEOS E INDEPENDIENTES
-# ============================================================
-
-CRONOMETROS = {
-    "setup": {
-        "nombre": "Setup / Alistamiento",
-        "descripcion": "Preparación inicial y puesta a punto de máquina"
-    },
-    "ciclo": {
-        "nombre": "Ciclo Real Operativo",
-        "descripcion": "Tiempo efectivo de procesamiento y fabricación"
-    },
-    "descargue": {
-        "nombre": "Descargue y Post-Corte",
-        "descripcion": "Retiro, evacuación y despacho de piezas"
-    },
-    "paros": {
-        "nombre": "Paro / Tiempo Muerto de Máquina",
-        "descripcion": "Detenciones imprevistas o mecánicas"
-    },
-    "espera": {
-        "nombre": "Operario en Espera",
-        "descripcion": "Tiempos ociosos o espera de insumos"
-    }
-}
-
-
-def inicializar_cronometros():
-    for clave in CRONOMETROS:
-        inicializar_estado(f"{clave}_acumulado", 0.0)
-        inicializar_estado(f"{clave}_inicio", None)
-
-
-def segundos_cronometro(clave):
-    acumulado = float(st.session_state.get(f"{clave}_acumulado", 0.0))
-    inicio = st.session_state.get(f"{clave}_inicio")
-    if inicio is not None:
-        acumulado += time.time() - inicio
-    return max(0.0, acumulado)
-
-
-def cronometros_activos_count():
-    return sum(
-        1 for clave in CRONOMETROS
-        if st.session_state.get(f"{clave}_inicio") is not None
-    )
-
-
-def iniciar_cronometro(clave):
-    st.session_state[f"{clave}_inicio"] = time.time()
-    if not st.session_state.get("hora_inicio_registro"):
-        st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
-
-
-def pausar_cronometro(clave):
-    inicio = st.session_state.get(f"{clave}_inicio")
-    if inicio is not None:
-        st.session_state[f"{clave}_acumulado"] += time.time() - inicio
-        st.session_state[f"{clave}_inicio"] = None
-
-
-def reiniciar_cronometros():
-    for clave in CRONOMETROS:
-        st.session_state[f"{clave}_acumulado"] = 0.0
-        st.session_state[f"{clave}_inicio"] = None
-    st.session_state["hora_inicio_registro"] = None
-
-
-inicializar_cronometros()
-inicializar_estado("hora_inicio_registro", None)
-
-# ============================================================
-# 8. CONFIGURACIÓN EN BARRA LATERAL
+# 7. CONFIGURACIÓN EN BARRA LATERAL
 # ============================================================
 
 with st.sidebar:
@@ -590,7 +587,7 @@ with st.sidebar:
     st.caption(f"Fecha: {obtener_fecha_bogota().strftime('%Y-%m-%d')}")
 
 # ============================================================
-# 9. ENCABEZADO INDUSTRIAL PROFESIONAL
+# 8. ENCABEZADO INDUSTRIAL PROFESIONAL
 # ============================================================
 
 st.markdown(
@@ -607,7 +604,7 @@ st.markdown(
 )
 
 # ============================================================
-# 10. PESTAÑAS PRINCIPALES
+# 9. PESTAÑAS PRINCIPALES
 # ============================================================
 
 tab_registro, tab_historial, tab_admin = st.tabs([
@@ -617,7 +614,7 @@ tab_registro, tab_historial, tab_admin = st.tabs([
 ])
 
 # ============================================================
-# 11. PESTAÑA 1: REGISTRO Y CRONÓMETROS SIMULTÁNEOS
+# 10. PESTAÑA 1: REGISTRO Y CRONÓMETROS SIMULTÁNEOS
 # ============================================================
 
 with tab_registro:
@@ -745,10 +742,10 @@ with tab_registro:
 
     tiempos_seg = {clv: segundos_cronometro(clv) for clv in CRONOMETROS}
     setup_min = minutos_desde_segundos(tiempos_seg["setup"])
-    ciclo_min = minutos_desde_segundos(tiempos_segundos["ciclo"])
-    descargue_min = minutos_desde_segundos(tiempos_segundos["descargue"])
-    paros_min = minutos_desde_segundos(tiempos_segundos["paros"])
-    espera_min = minutos_desde_segundos(tiempos_segundos["espera"])
+    ciclo_min = minutos_desde_segundos(tiempos_seg["ciclo"])
+    descargue_min = minutos_desde_segundos(tiempos_seg["descargue"])
+    paros_min = minutos_desde_segundos(tiempos_seg["paros"])
+    espera_min = minutos_desde_segundos(tiempos_seg["espera"])
 
     tiempo_total_min = round(setup_min + ciclo_min + descargue_min + paros_min + espera_min, 2)
     tiempo_productivo_min = ciclo_min
@@ -855,7 +852,7 @@ with tab_registro:
                 st.error(f"Error al guardar los datos: {ex}")
 
 # ============================================================
-# 12. PESTAÑA 2: HISTORIAL Y ANALÍTICA
+# 11. PESTAÑA 2: HISTORIAL Y ANALÍTICA
 # ============================================================
 
 with tab_historial:
@@ -907,7 +904,7 @@ with tab_historial:
             )
 
 # ============================================================
-# 13. PESTAÑA 3: ADMINISTRACIÓN Y SEGURIDAD
+# 12. PESTAÑA 3: ADMINISTRACIÓN Y SEGURIDAD
 # ============================================================
 
 with tab_admin:
