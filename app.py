@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -165,12 +164,12 @@ CONFIG_PLANTAS = {
 }
 
 # ============================================================
-# 3. ESTILO VISUAL
+# 3. ESTILO VISUAL (Números Finos y Elegantes)
 # ============================================================
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -246,8 +245,9 @@ h1, h2, h3 {
     color: #0f172a;
     font-family: 'JetBrains Mono', monospace;
     font-size: 24px;
-    font-weight: 700;
+    font-weight: 500;
     margin-top: 8px;
+    letter-spacing: -0.5px;
 }
 
 .timer-card {
@@ -266,10 +266,11 @@ h1, h2, h3 {
 
 .timer-value {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 30px;
-    font-weight: 700;
+    font-size: 28px;
+    font-weight: 500;
     color: #0f172a;
     margin: 7px 0;
+    letter-spacing: -0.5px;
 }
 
 .timer-note {
@@ -515,8 +516,6 @@ def cronometro_activo():
 
 
 def iniciar_cronometro(clave):
-    # Solo permite un cronómetro activo a la vez para evitar
-    # contar simultáneamente tiempos que deberían ser independientes.
     if cronometro_activo():
         st.warning(
             "Hay un cronómetro activo. Deténlo antes de iniciar otro."
@@ -843,7 +842,6 @@ with tab_registro:
                         st.session_state[f"{clave}_acumulado"] = 0.0
                         st.rerun()
 
-    # Actualización visual mientras haya un cronómetro en marcha
     if cronometro_activo():
         time.sleep(1)
         st.rerun()
@@ -987,355 +985,4 @@ with tab_registro:
         if cronometro_activo():
             errores.append("Pausa todos los cronómetros antes de guardar.")
 
-        if tiempo_total_min <= 0:
-            errores.append("Registra al menos un tiempo antes de guardar.")
-
-        if errores:
-            for error in errores:
-                st.error(error)
-
-        else:
-            hora_inicio = (
-                st.session_state.get("hora_inicio_registro")
-                or obtener_hora_bogota()
-            )
-            hora_fin = obtener_hora_bogota()
-
-            if motivo_paro == "No aplica / Sin paro":
-                motivo_final = ""
-            else:
-                motivo_final = motivo_paro
-
-            registro = {
-                "Planta": planta,
-                "Operario": operario,
-                "Orden": orden.strip(),
-                "Fecha": fecha_registro.strftime("%Y-%m-%d"),
-                "Turno": turno,
-                "Máquina": maquina,
-                "Proyecto": proyecto.strip(),
-                "Detalle Pieza": detalle_pieza.strip(),
-                "Material": material,
-                "Espesor/Calibre": calibre_final,
-                "Cantidad Lote": int(cantidad_lote),
-                "Piezas OK": int(piezas_ok),
-                "Setup (min)": setup_min,
-                "Tiempo Estándar (min)": float(tiempo_estandar),
-                "Ciclo Real (min)": ciclo_min,
-                "Espera Operario (min)": espera_min,
-                "Paro Máquina (min)": paros_min,
-                "Descargue (min)": descargue_min,
-                "Motivo Paro": motivo_final,
-                "Hora Inicio": hora_inicio,
-                "Hora Fin": hora_fin
-            }
-
-            try:
-                guardar_registro(planta, registro)
-                st.success(
-                    f"Registro guardado correctamente en {ARCHIVOS_EXCEL[planta]}."
-                )
-                reiniciar_cronometros()
-                st.rerun()
-
-            except Exception as e:
-                st.error(f"No se pudo guardar el registro: {e}")
-
-# ============================================================
-# 12. PESTAÑA DE HISTORIAL Y ANÁLISIS
-# ============================================================
-
-with tab_historial:
-
-    st.markdown(
-        '<div class="section-title">Historial de producción</div>',
-        unsafe_allow_html=True
-    )
-
-    st.caption(f"Archivo consultado: {ARCHIVOS_EXCEL[planta]}")
-
-    df_historial = leer_historial(planta)
-
-    if df_historial is not None:
-
-        if df_historial.empty:
-            st.info(
-                "Todavía no hay registros para esta planta. "
-                "Guarda una operación para comenzar el historial."
-            )
-
-        else:
-            col_f1, col_f2, col_f3 = st.columns(3)
-
-            with col_f1:
-                operadores_historial = sorted(
-                    df_historial["Operario"]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                    .tolist()
-                )
-
-                filtro_operario = st.selectbox(
-                    "Filtrar por operario",
-                    ["Todos"] + operadores_historial,
-                    key=f"filtro_operario_{planta}"
-                )
-
-            with col_f2:
-                maquinas_historial = sorted(
-                    df_historial["Máquina"]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                    .tolist()
-                )
-
-                filtro_maquina = st.selectbox(
-                    "Filtrar por máquina",
-                    ["Todas"] + maquinas_historial,
-                    key=f"filtro_maquina_{planta}"
-                )
-
-            with col_f3:
-                filtro_op = st.text_input(
-                    "Buscar orden de producción",
-                    placeholder="Escribe una OP",
-                    key=f"filtro_op_{planta}"
-                )
-
-            df_filtrado = df_historial.copy()
-
-            if filtro_operario != "Todos":
-                df_filtrado = df_filtrado[
-                    df_filtrado["Operario"].astype(str) == filtro_operario
-                ]
-
-            if filtro_maquina != "Todas":
-                df_filtrado = df_filtrado[
-                    df_filtrado["Máquina"].astype(str) == filtro_maquina
-                ]
-
-            if filtro_op.strip():
-                df_filtrado = df_filtrado[
-                    df_filtrado["Orden"]
-                    .astype(str)
-                    .str.contains(filtro_op.strip(), case=False, na=False)
-                ]
-
-            # Indicadores calculados a partir del historial filtrado
-            total_registros = len(df_filtrado)
-
-            if "Ciclo Real (min)" in df_filtrado.columns:
-                total_ciclo = pd.to_numeric(
-                    df_filtrado["Ciclo Real (min)"], errors="coerce"
-                ).fillna(0).sum()
-            else:
-                total_ciclo = 0
-
-            if "Paro Máquina (min)" in df_filtrado.columns:
-                total_paros = pd.to_numeric(
-                    df_filtrado["Paro Máquina (min)"], errors="coerce"
-                ).fillna(0).sum()
-            else:
-                total_paros = 0
-
-            if "Espera Operario (min)" in df_filtrado.columns:
-                total_espera = pd.to_numeric(
-                    df_filtrado["Espera Operario (min)"], errors="coerce"
-                ).fillna(0).sum()
-            else:
-                total_espera = 0
-
-            m1, m2, m3, m4 = st.columns(4)
-
-            with m1:
-                st.metric("Registros", f"{total_registros:,}")
-
-            with m2:
-                st.metric("Ciclo acumulado", f"{total_ciclo:,.2f} min")
-
-            with m3:
-                st.metric("Paros acumulados", f"{total_paros:,.2f} min")
-
-            with m4:
-                st.metric("Espera acumulada", f"{total_espera:,.2f} min")
-
-            st.markdown("#### Detalle de registros")
-
-            st.dataframe(
-                df_filtrado,
-                use_container_width=True,
-                hide_index=True
-            )
-
-            if not df_filtrado.empty:
-                st.markdown("#### Tiempo de ciclo por máquina")
-
-                resumen = df_filtrado.copy()
-                resumen["Ciclo Real (min)"] = pd.to_numeric(
-                    resumen["Ciclo Real (min)"], errors="coerce"
-                ).fillna(0)
-
-                resumen_maquinas = (
-                    resumen.groupby("Máquina", dropna=False)
-                    .agg(
-                        Registros=("Máquina", "size"),
-                        **{"Ciclo acumulado (min)": ("Ciclo Real (min)", "sum")}
-                    )
-                    .reset_index()
-                    .sort_values("Ciclo acumulado (min)", ascending=False)
-                )
-
-                st.dataframe(
-                    resumen_maquinas,
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-            st.markdown("---")
-            st.markdown("#### Exportación protegida")
-
-            pin_exportar = st.text_input(
-                "PIN para habilitar exportación",
-                type="password",
-                key=f"pin_exportar_{planta}"
-            )
-
-            if pin_exportar == PIN_EXPORTACION:
-                st.success("PIN válido. Exportación habilitada.")
-
-                archivo_exportacion = crear_excel_en_memoria(df_filtrado)
-
-                st.download_button(
-                    label="⬇️ Descargar historial filtrado en Excel",
-                    data=archivo_exportacion,
-                    file_name=(
-                        f"Historial_{planta.replace(' ', '_')}_"
-                        f"{obtener_fecha_bogota().strftime('%Y%m%d')}.xlsx"
-                    ),
-                    mime=(
-                        "application/vnd.openxmlformats-officedocument."
-                        "spreadsheetml.sheet"
-                    ),
-                    use_container_width=True,
-                    key=f"descargar_excel_{planta}"
-                )
-            else:
-                st.caption("Ingresa el PIN correcto para habilitar la descarga.")
-
-# ============================================================
-# 13. PESTAÑA DE ADMINISTRACIÓN
-# ============================================================
-
-with tab_administracion:
-
-    st.markdown(
-        '<div class="section-title">Administración de operarios</div>',
-        unsafe_allow_html=True
-    )
-
-    operarios_admin = cargar_operarios(planta)
-
-    if not operarios_admin:
-        st.info("No hay operarios registrados para esta planta.")
-    else:
-        operario_eliminar = st.selectbox(
-            "Seleccionar operario para eliminar",
-            operarios_admin,
-            key=f"eliminar_operario_select_{planta}"
-        )
-
-        st.warning(
-            "Eliminar un operario de la lista no borra sus registros históricos."
-        )
-
-        confirmar_operario = st.checkbox(
-            "Confirmo que deseo eliminar este operario de la lista.",
-            key=f"confirmar_eliminar_operario_{planta}"
-        )
-
-        if st.button(
-            "🗑️ Eliminar operario seleccionado",
-            disabled=not confirmar_operario,
-            key=f"eliminar_operario_btn_{planta}"
-        ):
-            nuevos_operarios = [
-                nombre for nombre in operarios_admin
-                if nombre != operario_eliminar
-            ]
-            guardar_operarios(planta, nuevos_operarios)
-            st.success("Operario eliminado de la lista.")
-            st.rerun()
-
-    st.markdown("---")
-    st.markdown(
-        '<div class="section-title">Administración del historial</div>',
-        unsafe_allow_html=True
-    )
-
-    st.warning(
-        "La eliminación del historial es permanente para el archivo de la planta. "
-        "Exporta una copia antes de continuar."
-    )
-
-    pin_eliminar = st.text_input(
-        "PIN de administración",
-        type="password",
-        key=f"pin_eliminar_{planta}"
-    )
-
-    confirmar_historial = st.checkbox(
-        f"Confirmo que deseo borrar todos los registros de {planta}.",
-        key=f"confirmar_historial_{planta}"
-    )
-
-    if st.button(
-        "⚠️ Borrar historial completo de esta planta",
-        type="secondary",
-        disabled=(
-            pin_eliminar != PIN_EXPORTACION
-            or not confirmar_historial
-        ),
-        use_container_width=True,
-        key=f"borrar_historial_btn_{planta}"
-    ):
-        archivo = ARCHIVOS_EXCEL[planta]
-
-        try:
-            if os.path.exists(archivo):
-                os.remove(archivo)
-
-            st.success(
-                f"Historial de {planta} eliminado. "
-                "El archivo vacío se creará al guardar el siguiente registro."
-            )
-            st.rerun()
-
-        except OSError as e:
-            st.error(f"No se pudo eliminar el historial: {e}")
-
-    st.markdown("---")
-    st.markdown("#### Archivos de trabajo")
-
-    st.write(f"**Archivo de producción:** `{ARCHIVOS_EXCEL[planta]}`")
-    st.write(f"**Archivo de operarios:** `{ARCHIVOS_OPERARIOS[planta]}`")
-
-    st.caption(
-        "Los registros y listas se guardan localmente en la carpeta desde "
-        "la que ejecutas la aplicación."
-    )
-
-# ============================================================
-# 14. PIE DE PÁGINA
-# ============================================================
-
-st.markdown("---")
-st.markdown(
-    """
-    <div style="text-align:center; color:#64748b; font-size:11px; padding:8px;">
-        Control de Tiempos y Métodos · Desarrollado por Tatiana Almario
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        if tiempo_total_min <= 0
