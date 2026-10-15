@@ -5,6 +5,7 @@ import time
 import os
 import json
 import pytz
+import io
 
 # ============================================================
 # 1. CONFIGURACIÓN GENERAL E INDUSTRIAL
@@ -567,6 +568,21 @@ def guardar_registro(planta, registro):
     resultado.to_excel(archivo, index=False, engine="openpyxl")
 
 
+def crear_excel_en_memoria(df):
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Registro_Industrial")
+        hoja = writer.sheets["Registro_Industrial"]
+        hoja.freeze_panes = "A2"
+        hoja.auto_filter.ref = hoja.dimensions
+        for columna in hoja.columns:
+            letra = columna[0].column_letter
+            max_largo = max(len(str(celda.value or "")) for celda in columna)
+            hoja.column_dimensions[letra].width = min(max(max_largo + 3, 12), 35)
+    buffer.seek(0)
+    return buffer
+
+
 # ============================================================
 # 7. CONFIGURACIÓN EN BARRA LATERAL
 # ============================================================
@@ -911,32 +927,63 @@ with tab_historial:
 # ============================================================
 
 with tab_admin:
-    st.markdown('<div class="section-title-eng">Panel de Administración de Base de Datos</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title-eng">Panel de Administración y Exportación de Base de Datos</div>', unsafe_allow_html=True)
     st.warning("Acceso restringido para supervisores y analistas de costos.")
 
-    pin_code = st.text_input("Ingrese PIN de Seguridad Autorizado", type="password", key=f"pin_adm_{planta}")
+    pin_code = st.text_input("Ingrese PIN de Seguridad Autorizado", type="password", key=f"pin_adm_global")
 
     if pin_code == PIN_EXPORTACION:
         st.success("Acceso autorizado con éxito.")
-        if os.path.exists(ARCHIVOS_EXCEL[planta]):
-            with open(ARCHIVOS_EXCEL[planta], "rb") as bin_file:
-                st.download_button(
-                    label=f"Descargar Base de Datos Completa ({planta})",
-                    data=bin_file,
-                    file_name=ARCHIVOS_EXCEL[planta],
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
-                    type="primary"
-                )
+        
+        st.markdown("---")
+        st.markdown("### Seleccione Planta y Opciones de Filtrado para Exportar")
+        
+        adm_planta = st.selectbox("Planta a Consultar/Exportar", ["Metalmecánica", "Maderas"], key="adm_sel_planta")
+        df_adm = leer_historial(adm_planta)
 
-            if st.button("Eliminar / Reiniciar Historial de Planta", type="secondary", use_container_width=True):
+        if df_adm is not None and not df_adm.empty:
+            with st.expander("Aplicar Filtros Opcionales para Reporte Personalizado", expanded=False):
+                adm_col1, adm_col2 = st.columns(2)
+                with adm_col1:
+                    ops_adm = sorted(df_adm["Operario"].dropna().astype(str).unique().tolist())
+                    filtro_adm_op = st.selectbox("Filtrar por Operario", ["Todos"] + ops_adm, key="adm_f_op")
+                with adm_col2:
+                    maqs_adm = sorted(df_adm["Máquina"].dropna().astype(str).unique().tolist())
+                    filtro_adm_mq = st.selectbox("Filtrar por Máquina", ["Todas"] + maqs_adm, key="adm_f_mq")
+                
+                filtro_adm_op_txt = st.text_input("Buscar por Orden (OP) específica", placeholder="Dejar en blanco para incluir todas", key="adm_f_txt")
+
+            df_adm_view = df_adm.copy()
+            if filtro_adm_op != "Todos":
+                df_adm_view = df_adm_view[df_adm_view["Operario"].astype(str) == filtro_adm_op]
+            if filtro_adm_mq != "Todas":
+                df_adm_view = df_adm_view[df_adm_view["Máquina"].astype(str) == filtro_adm_mq]
+            if filtro_adm_op_txt.strip():
+                df_adm_view = df_adm_view[df_adm_view["Orden"].astype(str).str.contains(filtro_adm_op_txt.strip(), case=False, na=False)]
+
+            st.write(f"Registros listos para exportar: **{len(df_adm_view)}** de {len(df_adm)} totales.")
+            
+            buffer_adm = crear_excel_en_memoria(df_adm_view)
+            st.download_button(
+                label=f"Descargar Reporte Filtrado / Base de Datos ({adm_planta})",
+                data=buffer_adm,
+                file_name=f"Admin_Reporte_{adm_planta}_{datetime.date.today()}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                type="primary"
+            )
+
+            st.markdown("---")
+            if st.button(f"Eliminar / Reiniciar Historial de {adm_planta}", type="secondary", use_container_width=True):
                 try:
-                    os.remove(ARCHIVOS_EXCEL[planta])
-                    st.success("Base de datos reiniciada correctamente.")
-                    st.rerun()
+                    if os.path.exists(ARCHIVOS_EXCEL[adm_planta]):
+                        os.remove(ARCHIVOS_EXCEL[adm_planta])
+                        st.success(f"Base de datos de {adm_planta} reiniciada correctamente.")
+                        st.rerun()
                 except Exception as exc:
                     st.error(f"No se pudo eliminar el archivo: {exc}")
         else:
-            st.info("No existe un archivo físico de base de datos para esta planta.")
+            st.info(f"No hay registros almacenados actualmente para la planta {adm_planta}.")
+
     elif pin_code != "":
         st.error("PIN incorrecto.")
