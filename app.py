@@ -5,7 +5,6 @@ import time
 import os
 import json
 import pytz
-import io
 
 # ============================================================
 # 1. CONFIGURACIÓN GENERAL E INDUSTRIAL
@@ -568,21 +567,6 @@ def guardar_registro(planta, registro):
     resultado.to_excel(archivo, index=False, engine="openpyxl")
 
 
-def crear_excel_en_memoria(df):
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Registro_Industrial")
-        hoja = writer.sheets["Registro_Industrial"]
-        hoja.freeze_panes = "A2"
-        hoja.auto_filter.ref = hoja.dimensions
-        for columna in hoja.columns:
-            letra = columna[0].column_letter
-            max_largo = max(len(str(celda.value or "")) for celda in columna)
-            hoja.column_dimensions[letra].width = min(max(max_largo + 3, 12), 35)
-    buffer.seek(0)
-    return buffer
-
-
 # ============================================================
 # 7. CONFIGURACIÓN EN BARRA LATERAL
 # ============================================================
@@ -920,16 +904,7 @@ with tab_historial:
             ch3.metric("Suma Paros de Máquina", f"{tot_paros_val:.2f} min")
 
             st.dataframe(df_view, use_container_width=True, hide_index=True)
-
-            buffer_dl = crear_excel_en_memoria(df_view)
-            st.download_button(
-                label="Descargar Reporte Filtrado (Excel)",
-                data=buffer_dl,
-                file_name=f"Reporte_{planta}_{datetime.date.today()}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                type="primary"
-            )
+            st.info("Nota: La exportación y descarga masiva de datos está restringida al panel de Administración protegido por PIN.")
 
 # ============================================================
 # 12. PESTAÑA 3: ADMINISTRACIÓN Y SEGURIDAD
