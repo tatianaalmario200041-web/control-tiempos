@@ -8,12 +8,12 @@ import pytz
 import io
 
 # ============================================================
-# 1. CONFIGURACIÓN GENERAL
+# 1. CONFIGURACIÓN GENERAL E INDUSTRIAL
 # ============================================================
 
 st.set_page_config(
-    page_title="Control de Tiempos y Métodos",
-    page_icon="⏱️",
+    page_title="Industrial Process Timing & Methods",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -56,12 +56,15 @@ COLUMNAS_REGISTRO = [
 ]
 
 # ============================================================
-# 2. CONFIGURACIÓN DE PLANTAS
+# 2. CONFIGURACIÓN DE PLANTAS Y PALETA DE COLORES TÉCNICA
 # ============================================================
 
 CONFIG_PLANTAS = {
     "Metalmecánica": {
-        "color": "#0284c7",
+        "color_primario": "#0052cc",      # Azul Industrial Sobrio
+        "color_borde": "#0052cc",
+        "bg_badge": "#e6f0ff",
+        "text_badge": "#003d99",
         "maquinas": [
             "Punzonadora Trumpf Trumatic 2000R",
             "Cortadora Láser CNC (MT 36) - F 3015",
@@ -112,7 +115,10 @@ CONFIG_PLANTAS = {
     },
 
     "Maderas": {
-        "color": "#ea580c",
+        "color_primario": "#d97706",      # Naranja Óxido Técnico / Ámbar
+        "color_borde": "#d97706",
+        "bg_badge": "#fef3c7",
+        "text_badge": "#92400e",
         "maquinas": [
             "Prensa Hidráulica MH3848",
             "Canteadora E-700-3 Pro",
@@ -163,159 +169,209 @@ CONFIG_PLANTAS = {
     }
 }
 
+# Variable auxiliar para el color dinámico actual según la planta seleccionada
+planta_actual_ini = st.session_state.get("planta_actual", "Metalmecánica")
+COLOR_ACTIVO = CONFIG_PLANTAS[planta_actual_ini]["color_primario"]
+BG_BADGE_ACTIVO = CONFIG_PLANTAS[planta_actual_ini]["bg_badge"]
+TEXT_BADGE_ACTIVO = CONFIG_PLANTAS[planta_actual_ini]["text_badge"]
+
 # ============================================================
-# 3. ESTILO VISUAL (Números Finos y Elegantes)
+# 3. ESTILOS CSS DE NIVEL INGENIERÍA INDUSTRIAL
 # ============================================================
 
-st.markdown("""
+st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-html, body, [class*="css"] {
+html, body, [class*="css"] {{
     font-family: 'Plus Jakarta Sans', sans-serif;
-}
+    color: #1e293b;
+}}
 
-.stApp {
-    background: #f4f6fa;
-}
+.stApp {{
+    background: #f8fafc;
+}}
 
-[data-testid="stHeader"] {
-    background: rgba(244, 246, 250, 0.95);
-}
+[data-testid="stHeader"] {{
+    background: rgba(248, 250, 252, 0.95);
+}}
 
-.block-container {
-    padding-top: 1.4rem;
+.block-container {{
+    padding-top: 1.2rem;
     padding-bottom: 2rem;
     max-width: 1600px;
-}
+}}
 
-h1, h2, h3 {
-    letter-spacing: -0.5px;
-}
-
-.hero {
-    background: linear-gradient(135deg, #111827 0%, #202c40 100%);
+/* Encabezado Técnico / Ejecutivo */
+.engineering-header {{
+    background: #0f172a;
+    border-left: 5px solid {COLOR_ACTIVO};
+    padding: 22px 26px;
+    border-radius: 8px;
     color: white;
-    padding: 25px 28px;
-    border-radius: 18px;
     margin-bottom: 20px;
-    border-bottom: 4px solid var(--plant-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.hero h1 {
-    color: white;
-    font-size: 28px;
+.engineering-title {{
+    font-size: 20px;
     font-weight: 800;
+    letter-spacing: -0.3px;
     margin: 0;
-}
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}}
 
-.hero p {
-    color: #cbd5e1;
-    margin: 7px 0 0 0;
-    font-size: 13px;
-}
+.plant-badge {{
+    background-color: {BG_BADGE_ACTIVO};
+    color: {TEXT_BADGE_ACTIVO};
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}}
 
-.section-title {
-    font-size: 17px;
-    font-weight: 800;
-    color: #172033;
-    padding: 10px 0 8px 0;
-    border-bottom: 2px solid #e2e8f0;
-    margin: 12px 0 15px 0;
-}
-
-.metric-card {
-    background: white;
-    padding: 17px;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    min-height: 95px;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.035);
-}
-
-.metric-label {
-    color: #64748b;
+.engineering-subtitle {{
+    color: #94a3b8;
     font-size: 12px;
+    font-weight: 500;
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}}
+
+/* Títulos de Secciones Técnicas */
+.section-title-eng {{
+    font-size: 13px;
+    font-weight: 800;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin: 16px 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-left: 3px solid {COLOR_ACTIVO};
+}}
+
+/* Tarjetas de Métricas Ejecutivas */
+.metric-card-eng {{
+    background: white;
+    padding: 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}}
+
+.metric-label-eng {{
+    color: #64748b;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: .4px;
-}
+    letter-spacing: 0.5px;
+}}
 
-.metric-value {
+.metric-value-eng {{
     color: #0f172a;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 24px;
-    font-weight: 500;
-    margin-top: 8px;
+    font-size: 22px;
+    font-weight: 600;
+    margin-top: 6px;
     letter-spacing: -0.5px;
-}
+}}
 
-.timer-card {
+/* Tarjetas de Cronómetros de Alta Precisión */
+.timer-card-eng {{
     background: white;
-    border: 1px solid #dbe3ed;
-    border-radius: 15px;
-    padding: 16px;
-    margin-bottom: 12px;
-}
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}}
 
-.timer-name {
-    font-size: 14px;
-    color: #334155;
-    font-weight: 800;
-}
+.timer-card-eng-active {{
+    background: white;
+    border: 2px solid {COLOR_ACTIVO};
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}}
 
-.timer-value {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 28px;
-    font-weight: 500;
-    color: #0f172a;
-    margin: 7px 0;
-    letter-spacing: -0.5px;
-}
+.timer-header-row {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}}
 
-.timer-note {
+.timer-name-eng {{
     font-size: 11px;
+    font-weight: 800;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}}
+
+.timer-status-idle {{
+    font-size: 9px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+}}
+
+.timer-status-active {{
+    font-size: 9px;
+    font-weight: 800;
+    color: {COLOR_ACTIVO};
+    text-transform: uppercase;
+}}
+
+.timer-digits-eng {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}}
+
+.timer-desc-eng {{
+    font-size: 10px;
     color: #64748b;
-}
+    margin-top: 2px;
+}}
 
-div.stButton > button {
-    border-radius: 9px;
-    font-weight: 700;
-    min-height: 40px;
-    transition: all .15s ease;
-}
+/* Botones de Estándar Industrial */
+div.stButton > button {{
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+    min-height: 38px !important;
+}}
 
-div[data-testid="stDownloadButton"] button {
-    border-radius: 9px;
-    font-weight: 700;
-    min-height: 42px;
-}
+div[data-testid="stDownloadButton"] button {{
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    min-height: 40px !important;
+}}
 
-div[data-testid="stDataFrame"] {
-    border: 1px solid #dbe3ed;
-    border-radius: 10px;
-    overflow: hidden;
-}
+label {{
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    color: #334155 !important;
+}}
 
-label {
-    font-weight: 600 !important;
-}
-
-footer {
+footer {{
     visibility: hidden;
-}
-
-@media (max-width: 700px) {
-    .hero {
-        padding: 18px;
-    }
-    .hero h1 {
-        font-size: 22px;
-    }
-    .timer-value {
-        font-size: 24px;
-    }
-}
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -352,142 +408,106 @@ def inicializar_estado(clave, valor):
 
 
 # ============================================================
-# 5. OPERARIOS
+# 5. GESTIÓN DE OPERARIOS
 # ============================================================
 
 def cargar_operarios(planta):
     archivo = ARCHIVOS_OPERARIOS[planta]
-
     if not os.path.exists(archivo):
         return []
-
     try:
         with open(archivo, "r", encoding="utf-8") as f:
             datos = json.load(f)
-
         if isinstance(datos, list):
             return sorted(set(str(x).strip() for x in datos if str(x).strip()))
-
         return []
-
     except (json.JSONDecodeError, OSError):
         return []
 
 
 def guardar_operarios(planta, operarios):
     archivo = ARCHIVOS_OPERARIOS[planta]
-
     with open(archivo, "w", encoding="utf-8") as f:
-        json.dump(
-            sorted(set(operarios)),
-            f,
-            ensure_ascii=False,
-            indent=4
-        )
+        json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
 
 # ============================================================
-# 6. LECTURA Y ESCRITURA DE EXCEL
+# 6. MANEJO DE ARCHIVOS EXCEL
 # ============================================================
 
 def leer_historial(planta):
     archivo = ARCHIVOS_EXCEL[planta]
-
     if not os.path.exists(archivo):
         return pd.DataFrame(columns=COLUMNAS_REGISTRO)
-
     try:
         df = pd.read_excel(archivo, engine="openpyxl")
-
         for columna in COLUMNAS_REGISTRO:
             if columna not in df.columns:
                 df[columna] = None
-
         return df[COLUMNAS_REGISTRO]
-
     except Exception as e:
-        st.error(
-            f"No fue posible leer el archivo {archivo}. "
-            f"Verifica que no esté abierto en Excel y que no esté dañado. "
-            f"Detalle: {e}"
-        )
+        st.error(f"Error al leer el archivo de la planta. Detalle: {e}")
         return None
 
 
 def guardar_registro(planta, registro):
     archivo = ARCHIVOS_EXCEL[planta]
-
     if os.path.exists(archivo):
         try:
             df_existente = pd.read_excel(archivo, engine="openpyxl")
         except Exception as e:
-            raise RuntimeError(
-                f"No se pudo leer el historial existente. "
-                f"No se guardó el registro para evitar sobrescribir datos. {e}"
-            )
-
+            raise RuntimeError(f"No se pudo leer el historial previo: {e}")
         for columna in COLUMNAS_REGISTRO:
             if columna not in df_existente.columns:
                 df_existente[columna] = None
-
         df_existente = df_existente[COLUMNAS_REGISTRO]
-
     else:
         df_existente = pd.DataFrame(columns=COLUMNAS_REGISTRO)
 
     nuevo = pd.DataFrame([registro], columns=COLUMNAS_REGISTRO)
     resultado = pd.concat([df_existente, nuevo], ignore_index=True)
-
     resultado.to_excel(archivo, index=False, engine="openpyxl")
 
 
 def crear_excel_en_memoria(df):
     buffer = io.BytesIO()
-
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Registro")
-        hoja = writer.sheets["Registro"]
+        df.to_excel(writer, index=False, sheet_name="Registro_Industrial")
+        hoja = writer.sheets["Registro_Industrial"]
         hoja.freeze_panes = "A2"
         hoja.auto_filter.ref = hoja.dimensions
-
         for columna in hoja.columns:
             letra = columna[0].column_letter
-            max_largo = 0
-
-            for celda in columna:
-                valor = "" if celda.value is None else str(celda.value)
-                max_largo = max(max_largo, len(valor))
-
-            hoja.column_dimensions[letra].width = min(max(max_largo + 2, 12), 35)
-
+            max_largo = max(len(str(celda.value or "")) for celda in columna)
+            hoja.column_dimensions[letra].width = min(max(max_largo + 3, 12), 35)
     buffer.seek(0)
     return buffer
 
 
 # ============================================================
-# 7. CRONÓMETROS INDEPENDIENTES
+# 7. CRONÓMETROS SIMULTÁNEOS E INDEPENDIENTES
 # ============================================================
 
 CRONOMETROS = {
     "setup": {
         "nombre": "Setup / Alistamiento",
-        "descripcion": "Preparación inicial de máquina y herramientas"
+        "descripcion": "Preparación inicial y puesta a punto de máquina"
     },
     "ciclo": {
-        "nombre": "Ciclo Real",
-        "descripcion": "Tiempo de operación productiva"
+        "nombre": "Ciclo Real Operativo",
+        "descripcion": "Tiempo efectivo de procesamiento y fabricación"
     },
     "descargue": {
-        "nombre": "Descargue",
-        "descripcion": "Retiro y organización de piezas terminadas"
+        "nombre": "Descargue y Post-Corte",
+        "descripcion": "Retiro, evacuación y despacho de piezas"
     },
     "paros": {
-        "nombre": "Paros de Máquina",
-        "descripcion": "Tiempo de detención de la máquina"
+        "nombre": "Paro / Tiempo Muerto de Máquina",
+        "descripcion": "Detenciones imprevistas o mecánicas"
     },
     "espera": {
-        "nombre": "Espera de Operario",
-        "descripcion": "Tiempo de espera sin operación productiva"
+        "nombre": "Operario en Espera",
+        "descripcion": "Tiempos ociosos o espera de insumos"
     }
 }
 
@@ -501,36 +521,26 @@ def inicializar_cronometros():
 def segundos_cronometro(clave):
     acumulado = float(st.session_state.get(f"{clave}_acumulado", 0.0))
     inicio = st.session_state.get(f"{clave}_inicio")
-
     if inicio is not None:
         acumulado += time.time() - inicio
-
     return max(0.0, acumulado)
 
 
-def cronometro_activo():
-    return any(
-        st.session_state.get(f"{clave}_inicio") is not None
-        for clave in CRONOMETROS
+def cronometros_activos_count():
+    return sum(
+        1 for clave in CRONOMETROS
+        if st.session_state.get(f"{clave}_inicio") is not None
     )
 
 
 def iniciar_cronometro(clave):
-    if cronometro_activo():
-        st.warning(
-            "Hay un cronómetro activo. Deténlo antes de iniciar otro."
-        )
-        return
-
     st.session_state[f"{clave}_inicio"] = time.time()
-
     if not st.session_state.get("hora_inicio_registro"):
         st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
 
 
 def pausar_cronometro(clave):
     inicio = st.session_state.get(f"{clave}_inicio")
-
     if inicio is not None:
         st.session_state[f"{clave}_acumulado"] += time.time() - inicio
         st.session_state[f"{clave}_inicio"] = None
@@ -540,7 +550,6 @@ def reiniciar_cronometros():
     for clave in CRONOMETROS:
         st.session_state[f"{clave}_acumulado"] = 0.0
         st.session_state[f"{clave}_inicio"] = None
-
     st.session_state["hora_inicio_registro"] = None
 
 
@@ -548,61 +557,50 @@ inicializar_cronometros()
 inicializar_estado("hora_inicio_registro", None)
 
 # ============================================================
-# 8. SELECCIÓN DE PLANTA
+# 8. CONFIGURACIÓN EN BARRA LATERAL
 # ============================================================
 
 if "planta_actual" not in st.session_state:
     st.session_state["planta_actual"] = "Metalmecánica"
 
 with st.sidebar:
-    st.markdown("## ⚙️ Configuración")
-
+    st.markdown("### Configuración de Planta")
     planta = st.radio(
-        "Selecciona la planta",
+        "Seleccione planta activa",
         options=["Metalmecánica", "Maderas"],
-        index=(
-            0 if st.session_state["planta_actual"] == "Metalmecánica"
-            else 1
-        ),
+        index=0 if st.session_state["planta_actual"] == "Metalmecánica" else 1,
         key="selector_planta"
     )
 
     if planta != st.session_state["planta_actual"]:
-        if cronometro_activo():
-            st.warning(
-                "Detén el cronómetro activo antes de cambiar de planta."
-            )
-            st.session_state["selector_planta"] = (
-                st.session_state["planta_actual"]
-            )
-        else:
-            st.session_state["planta_actual"] = planta
-            st.rerun()
+        st.session_state["planta_actual"] = planta
+        st.rerun()
 
-    planta = st.session_state["planta_actual"]
     config = CONFIG_PLANTAS[planta]
 
     st.markdown("---")
-    st.markdown("### 📌 Estado de la sesión")
-
-    if cronometro_activo():
-        st.success("Cronómetro en ejecución")
+    st.markdown("### Estado de Estación")
+    activos_qty = cronometros_activos_count()
+    if activos_qty > 0:
+        st.success(f"Cronómetros activos: {activos_qty}")
     else:
-        st.info("Sin cronómetros activos")
+        st.info("Estación en pausa / Sin actividad")
 
-    st.caption(f"Planta activa: {planta}")
-    st.caption(f"Fecha: {obtener_fecha_bogota().strftime('%d/%m/%Y')}")
+    st.caption(f"Planta: {planta}")
+    st.caption(f"Fecha: {obtener_fecha_bogota().strftime('%Y-%m-%d')}")
 
 # ============================================================
-# 9. ENCABEZADO
+# 9. ENCABEZADO INDUSTRIAL PROFESIONAL
 # ============================================================
 
 st.markdown(
     f"""
-    <div class="hero" style="--plant-color:{config['color']}">
-        <h1>⏱️ Control de Tiempos y Métodos</h1>
-        <p>Registro de producción · Estudio de tiempos · Control operativo</p>
-        <p><strong>Planta activa:</strong> {planta}</p>
+    <div class="engineering-header" style="border-left-color: {config['color_primario']};">
+        <div class="engineering-title">
+            Módulo de Toma de Tiempos y Control de Métodos
+            <span class="plant-badge" style="background-color: {config['bg_badge']}; color: {config['text_badge']};">{planta.upper()}</span>
+        </div>
+        <div class="engineering-subtitle">Ingeniería de Costos y Procesos Industriales • Estándar Operativo</div>
     </div>
     """,
     unsafe_allow_html=True
@@ -612,399 +610,221 @@ st.markdown(
 # 10. PESTAÑAS PRINCIPALES
 # ============================================================
 
-tab_registro, tab_historial, tab_administracion = st.tabs([
-    "📝 Registro de producción",
-    "📊 Historial y análisis",
-    "⚙️ Administración"
+tab_registro, tab_historial, tab_admin = st.tabs([
+    "Registro Operativo y Cronometraje",
+    "Historial y Analítica de Ciclos",
+    "Administración y Base de Datos"
 ])
 
 # ============================================================
-# 11. PESTAÑA DE REGISTRO
+# 11. PESTAÑA 1: REGISTRO Y CRONÓMETROS SIMULTÁNEOS
 # ============================================================
 
 with tab_registro:
-
     operarios = cargar_operarios(planta)
 
-    st.markdown(
-        '<div class="section-title">1. Información de la operación</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="section-title-eng">1. Datos Generales de la Orden de Producción</div>', unsafe_allow_html=True)
 
     col_op1, col_op2, col_op3 = st.columns([1.5, 1.5, 1])
 
     with col_op1:
-        opciones_operarios = ["Seleccionar operario"] + operarios
-
-        operario = st.selectbox(
-            "Operario responsable",
-            opciones_operarios,
-            key=f"operario_select_{planta}"
-        )
+        opciones_operarios = ["Seleccione operario..."] + operarios
+        operario = st.selectbox("Operario Responsable", opciones_operarios, key=f"op_sel_{planta}")
 
     with col_op2:
-        nuevo_operario = st.text_input(
-            "Agregar nuevo operario",
-            placeholder="Nombre completo",
-            key=f"nuevo_operario_{planta}"
-        )
-
-        if st.button(
-            "➕ Guardar operario",
-            key=f"guardar_operario_{planta}",
-            use_container_width=True
-        ):
+        nuevo_operario = st.text_input("Registrar Nuevo Operario", placeholder="Nombre y Apellido", key=f"nuevo_op_{planta}")
+        if st.button("Registrar Operario", key=f"btn_save_op_{planta}", use_container_width=True):
             nombre = nuevo_operario.strip()
-
             if not nombre:
-                st.warning("Escribe el nombre del operario.")
+                st.warning("Ingrese el nombre del operario.")
             elif nombre in operarios:
-                st.info("Este operario ya está registrado.")
+                st.info("El operario ya se encuentra registrado.")
             else:
                 operarios.append(nombre)
                 guardar_operarios(planta, operarios)
-                st.success(f"Operario agregado: {nombre}")
+                st.success(f"Operario registrado con éxito.")
                 st.rerun()
 
     with col_op3:
-        fecha_registro = st.date_input(
-            "Fecha del registro",
-            value=obtener_fecha_bogota(),
-            key=f"fecha_registro_{planta}"
-        )
+        fecha_registro = st.date_input("Fecha de Registro", value=obtener_fecha_bogota(), key=f"fec_{planta}")
 
     col_op4, col_op5, col_op6 = st.columns(3)
 
     with col_op4:
-        orden = st.text_input(
-            "Orden de producción (OP)",
-            placeholder="Ej. OP-00125",
-            key=f"orden_{planta}"
-        )
-
+        orden = st.text_input("Orden de Producción (OP)", placeholder="Ej. OP-2026-001", key=f"ord_{planta}")
     with col_op5:
-        turno = st.selectbox(
-            "Turno",
-            ["Mañana", "Tarde", "Noche", "Mixto"],
-            key=f"turno_{planta}"
-        )
-
+        turno = st.selectbox("Turno de Trabajo", ["Turno 1 (Mañana)", "Turno 2 (Tarde)", "Turno 3 (Noche)", "Mixto"], key=f"tur_{planta}")
     with col_op6:
-        maquina = st.selectbox(
-            "Máquina",
-            config["maquinas"],
-            key=f"maquina_{planta}"
-        )
+        maquina = st.selectbox("Máquina / Estación", config["maquinas"], key=f"maq_{planta}")
 
     col_prod1, col_prod2 = st.columns(2)
-
     with col_prod1:
-        proyecto = st.text_input(
-            "Proyecto / Producto",
-            placeholder="Nombre del proyecto o producto",
-            key=f"proyecto_{planta}"
-        )
-
+        proyecto = st.text_input("Proyecto / Referencia General", placeholder="Ej. Estantería Metálica Módulo A", key=f"proy_{planta}")
     with col_prod2:
-        detalle_pieza = st.text_input(
-            "Detalle de la pieza",
-            placeholder="Referencia, pieza o descripción",
-            key=f"detalle_pieza_{planta}"
-        )
+        detalle_pieza = st.text_input("Especificación de Pieza / Sub-Ensamblaje", placeholder="Ej. Lateral Derecho Perforado", key=f"det_{planta}")
 
     col_mat1, col_mat2, col_mat3 = st.columns(3)
-
     with col_mat1:
-        material = st.selectbox(
-            "Material",
-            config["materiales"],
-            key=f"material_{planta}"
-        )
-
+        material = st.selectbox("Material Insumo", config["materiales"], key=f"mat_{planta}")
     with col_mat2:
-        calibre = st.selectbox(
-            "Espesor / Calibre",
-            config["calibres"],
-            key=f"calibre_{planta}"
-        )
-
+        calibre = st.selectbox("Espesor / Calibre", config["calibres"], key=f"cal_{planta}")
     with col_mat3:
         calibre_personalizado = ""
-
         if calibre == "OTRO / LIBRE (Escribir en vivo)":
-            calibre_personalizado = st.text_input(
-                "Especificar espesor o calibre",
-                placeholder="Escribe el valor",
-                key=f"calibre_personalizado_{planta}"
-            )
+            calibre_personalizado = st.text_input("Especificar Calibre Manual", placeholder="Valor exacto", key=f"cal_lib_{planta}")
 
-    if calibre == "OTRO / LIBRE (Escribir en vivo)":
-        calibre_final = calibre_personalizado.strip()
-    else:
-        calibre_final = calibre
+    calibre_final = calibre_personalizado.strip() if calibre == "OTRO / LIBRE (Escribir en vivo)" else calibre
 
     col_cant1, col_cant2, col_cant3 = st.columns(3)
-
     with col_cant1:
-        cantidad_lote = st.number_input(
-            "Cantidad del lote",
-            min_value=1,
-            value=1,
-            step=1,
-            key=f"cantidad_lote_{planta}"
-        )
-
+        cantidad_lote = st.number_input("Cantidad Total Lote", min_value=1, value=1, step=1, key=f"cant_lote_{planta}")
     with col_cant2:
-        piezas_ok = st.number_input(
-            "Piezas OK",
-            min_value=0,
-            value=1,
-            step=1,
-            key=f"piezas_ok_{planta}"
-        )
-
+        piezas_ok = st.number_input("Piezas Conformes (OK)", min_value=0, value=1, step=1, key=f"p_ok_{planta}")
     with col_cant3:
-        tiempo_estandar = st.number_input(
-            "Tiempo estándar por pieza (min)",
-            min_value=0.0,
-            value=0.0,
-            step=0.1,
-            format="%.2f",
-            key=f"tiempo_estandar_{planta}"
-        )
+        tiempo_estandar = st.number_input("Tiempo Estándar Unitario (min)", min_value=0.0, value=0.0, step=0.1, format="%.2f", key=f"t_std_{planta}")
 
-    st.markdown(
-        '<div class="section-title">2. Cronómetros de estudio de tiempos</div>',
-        unsafe_allow_html=True
-    )
-
-    st.caption(
-        "Inicia el cronómetro correspondiente a la actividad. "
-        "Pausa el cronómetro al terminarla. Solo puede haber uno activo a la vez."
-    )
+    st.markdown('<div class="section-title-eng">2. Cronómetros Múltiples (Funcionamiento Simultáneo e Independiente)</div>', unsafe_allow_html=True)
+    st.caption("Puede iniciar varios cronómetros a la vez (por ejemplo, registrar paros en paralelo o solapamiento de tiempos) o gestionarlos de forma independiente.")
 
     claves_cronometros = list(CRONOMETROS.keys())
 
+    # Renderizar en filas de 2 columnas para un diseño limpio y ordenado
     for inicio_fila in range(0, len(claves_cronometros), 2):
         columnas = st.columns(2)
-
-        for indice_columna, columna in enumerate(columnas):
-            posicion = inicio_fila + indice_columna
-
-            if posicion >= len(claves_cronometros):
+        for idx_col, col_actual in enumerate(columnas):
+            pos = inicio_fila + idx_col
+            if pos >= len(claves_cronometros):
                 continue
-
-            clave = claves_cronometros[posicion]
+            clave = claves_cronometros[pos]
             datos = CRONOMETROS[clave]
             activo = st.session_state.get(f"{clave}_inicio") is not None
             duracion = segundos_cronometro(clave)
 
-            with columna:
+            card_cls = "timer-card-eng-active" if activo else "timer-card-eng"
+            status_cls = "timer-status-active" if activo else "timer-status-idle"
+            status_txt = "EN EJECUCIÓN" if activo else "DETENIDO"
+
+            with col_actual:
                 st.markdown(
                     f"""
-                    <div class="timer-card">
-                        <div class="timer-name">{datos['nombre']}</div>
-                        <div class="timer-value">{formatear_duracion(duracion)}</div>
-                        <div class="timer-note">{datos['descripcion']}</div>
+                    <div class="{card_cls}">
+                        <div class="timer-header-row">
+                            <span class="timer-name-eng">{datos['nombre']}</span>
+                            <span class="{status_cls}">[{status_txt}]</span>
+                        </div>
+                        <div class="timer-digits-eng">{formatear_duracion(duracion)}</div>
+                        <div class="timer-desc-eng">{datos['descripcion']}</div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
 
-                col_btn1, col_btn2 = st.columns(2)
-
-                with col_btn1:
+                b_col1, b_col2 = st.columns(2)
+                with b_col1:
                     if not activo:
-                        if st.button(
-                            "▶ Iniciar",
-                            key=f"iniciar_{clave}",
-                            use_container_width=True,
-                            type="primary"
-                        ):
+                        if st.button("Iniciar", key=f"iniciar_{clave}_{planta}", use_container_width=True, type="primary"):
                             iniciar_cronometro(clave)
                             st.rerun()
                     else:
-                        if st.button(
-                            "⏸ Pausar",
-                            key=f"pausar_{clave}",
-                            use_container_width=True
-                        ):
+                        if st.button("Pausar", key=f"pausar_{clave}_{planta}", use_container_width=True):
                             pausar_cronometro(clave)
                             st.rerun()
-
-                with col_btn2:
-                    if st.button(
-                        "↺ Reiniciar",
-                        key=f"reiniciar_{clave}",
-                        use_container_width=True
-                    ):
+                with b_col2:
+                    if st.button("Reiniciar", key=f"reset_{clave}_{planta}", use_container_width=True):
                         pausar_cronometro(clave)
                         st.session_state[f"{clave}_acumulado"] = 0.0
                         st.rerun()
 
-    if cronometro_activo():
+    # Refrescar pantalla en tiempo real si hay al menos un cronómetro corriendo
+    if cronometros_activos_count() > 0:
         time.sleep(1)
         st.rerun()
 
-    st.markdown(
-        '<div class="section-title">3. Motivo de paro</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="section-title-eng">3. Motivo de Paro o Detención Operativa</div>', unsafe_allow_html=True)
+    motivo_paro = st.selectbox("Seleccione Motivo Principal de Paro", ["No aplica / Operación Continua"] + config["motivos_paro"], key=f"mot_{planta}")
 
-    motivo_paro = st.selectbox(
-        "Motivo principal del paro",
-        ["No aplica / Sin paro"] + config["motivos_paro"],
-        key=f"motivo_paro_{planta}"
-    )
+    st.markdown('<div class="section-title-eng">4. Consolidado y Analítica de Tiempos del Registro</div>', unsafe_allow_html=True)
 
-    st.markdown(
-        '<div class="section-title">4. Resumen de tiempos registrados</div>',
-        unsafe_allow_html=True
-    )
-
-    tiempos_segundos = {
-        clave: segundos_cronometro(clave)
-        for clave in CRONOMETROS
-    }
-
-    setup_min = minutos_desde_segundos(tiempos_segundos["setup"])
+    tiempos_seg = {clv: segundos_cronometro(clv) for clv in CRONOMETROS}
+    setup_min = minutos_desde_segundos(tiempos_seg["setup"])
     ciclo_min = minutos_desde_segundos(tiempos_segundos["ciclo"])
     descargue_min = minutos_desde_segundos(tiempos_segundos["descargue"])
     paros_min = minutos_desde_segundos(tiempos_segundos["paros"])
     espera_min = minutos_desde_segundos(tiempos_segundos["espera"])
 
-    tiempo_total_min = round(
-        setup_min + ciclo_min + descargue_min + paros_min + espera_min,
-        2
-    )
-
+    tiempo_total_min = round(setup_min + ciclo_min + descargue_min + paros_min + espera_min, 2)
     tiempo_productivo_min = ciclo_min
-    tiempo_no_productivo_min = round(paros_min + espera_min, 2)
+    tiempo_improductivo_min = round(paros_min + espera_min, 2)
 
-    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-
-    with col_m1:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">Tiempo total</div>
-                <div class="metric-value">{tiempo_total_min:.2f}</div>
-                <div class="timer-note">Minutos</div>
+    cm1, cm2, cm3, cm4 = st.columns(4)
+    with cm1:
+        st.markdown(f"""
+            <div class="metric-card-eng">
+                <div class="metric-label-eng">Tiempo Total</div>
+                <div class="metric-value-eng">{tiempo_total_min:.2f} min</div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col_m2:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">Ciclo productivo</div>
-                <div class="metric-value">{tiempo_productivo_min:.2f}</div>
-                <div class="timer-note">Minutos</div>
+        """, unsafe_allow_html=True)
+    with cm2:
+        st.markdown(f"""
+            <div class="metric-card-eng">
+                <div class="metric-label-eng">Ciclo Productivo</div>
+                <div class="metric-value-eng">{tiempo_productivo_min:.2f} min</div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col_m3:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">Tiempo no productivo</div>
-                <div class="metric-value">{tiempo_no_productivo_min:.2f}</div>
-                <div class="timer-note">Espera + paros</div>
+        """, unsafe_allow_html=True)
+    with cm3:
+        st.markdown(f"""
+            <div class="metric-card-eng">
+                <div class="metric-label-eng">Tiempos Improductivos</div>
+                <div class="metric-value-eng">{tiempo_improductivo_min:.2f} min</div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col_m4:
-        if tiempo_total_min > 0:
-            porcentaje_productivo = (
-                tiempo_productivo_min / tiempo_total_min
-            ) * 100
-        else:
-            porcentaje_productivo = 0.0
-
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">% ciclo del total</div>
-                <div class="metric-value">{porcentaje_productivo:.1f}%</div>
-                <div class="timer-note">Participación del ciclo</div>
+        """, unsafe_allow_html=True)
+    with cm4:
+        eficiencia_parcial = (tiempo_productivo_min / tiempo_total_min * 100) if tiempo_total_min > 0 else 0.0
+        st.markdown(f"""
+            <div class="metric-card-eng">
+                <div class="metric-label-eng">Eficiencia de Ciclo</div>
+                <div class="metric-value-eng">{eficiencia_parcial:.1f}%</div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+        """, unsafe_allow_html=True)
 
     st.markdown("---")
 
-    col_guardar, col_limpiar = st.columns([2, 1])
+    col_btn_save, col_btn_clear = st.columns([2, 1])
+    with col_btn_save:
+        guardar_btn = st.button("Guardar Registro en Base de Datos", type="primary", use_container_width=True, key=f"save_db_{planta}")
+    with col_btn_clear:
+        limpiar_btn = st.button("Reiniciar Todo", use_container_width=True, key=f"clear_all_{planta}")
 
-    with col_guardar:
-        guardar_boton = st.button(
-            "💾 GUARDAR REGISTRO DE PRODUCCIÓN",
-            type="primary",
-            use_container_width=True,
-            key="guardar_registro"
-        )
-
-    with col_limpiar:
-        limpiar_boton = st.button(
-            "🧹 Reiniciar cronómetros",
-            use_container_width=True,
-            key="limpiar_cronometros"
-        )
-
-    if limpiar_boton:
+    if limpiar_btn:
         reiniciar_cronometros()
         st.rerun()
 
-    if guardar_boton:
+    if guardar_btn:
         errores = []
-
-        if operario == "Seleccionar operario":
-            errores.append("Selecciona un operario responsable.")
-
+        if operario == "Seleccione operario...":
+            errores.append("Debe seleccionar un operario responsable.")
         if not orden.strip():
-            errores.append("Ingresa la orden de producción.")
-
+            errores.append("El campo Orden de Producción (OP) es obligatorio.")
         if not proyecto.strip():
-            errores.append("Ingresa el proyecto o producto.")
-
+            errores.append("El campo Proyecto / Referencia es obligatorio.")
         if not detalle_pieza.strip():
-            errores.append("Ingresa el detalle de la pieza.")
-
+            errores.append("El detalle de la pieza es obligatorio.")
         if calibre == "OTRO / LIBRE (Escribir en vivo)" and not calibre_final:
-            errores.append("Especifica el espesor o calibre.")
-
+            errores.append("Debe especificar el calibre de forma manual.")
         if piezas_ok > cantidad_lote:
-            errores.append("Las piezas OK no pueden superar la cantidad del lote.")
-
-        if cronometro_activo():
-            errores.append("Pausa todos los cronómetros antes de guardar.")
-
+            errores.append("Las piezas OK no pueden ser mayores a la cantidad del lote.")
         if tiempo_total_min <= 0:
-            errores.append("Registra al menos un tiempo antes de guardar.")
+            errores.append("Debe registrar al menos un tiempo operativo antes de guardar.")
 
         if errores:
-            for error in errores:
-                st.error(error)
-
+            for err in errores:
+                st.error(err)
         else:
-            hora_inicio = (
-                st.session_state.get("hora_inicio_registro")
-                or obtener_hora_bogota()
-            )
+            hora_ini = st.session_state.get("hora_inicio_registro") or obtener_hora_bogota()
             hora_fin = obtener_hora_bogota()
+            motivo_final = "" if motivo_paro == "No aplica / Operación Continua" else motivo_paro
 
-            if motivo_paro == "No aplica / Sin paro":
-                motivo_final = ""
-            else:
-                motivo_final = motivo_paro
-
-            registro = {
+            registro_data = {
                 "Planta": planta,
                 "Operario": operario,
                 "Orden": orden.strip(),
@@ -1024,184 +844,100 @@ with tab_registro:
                 "Paro Máquina (min)": paros_min,
                 "Descargue (min)": descargue_min,
                 "Motivo Paro": motivo_final,
-                "Hora Inicio": hora_inicio,
+                "Hora Inicio": hora_ini,
                 "Hora Fin": hora_fin
             }
 
             try:
-                guardar_registro(planta, registro)
-                st.success(
-                    f"Registro guardado correctamente en {ARCHIVOS_EXCEL[planta]}."
-                )
+                guardar_registro(planta, registro_data)
+                st.success(f"Registro almacenado con éxito en {ARCHIVOS_EXCEL[planta]}.")
                 reiniciar_cronometros()
                 st.rerun()
-
-            except Exception as e:
-                st.error(f"No se pudo guardar el registro: {e}")
+            except Exception as ex:
+                st.error(f"Error al guardar los datos: {ex}")
 
 # ============================================================
-# 12. PESTAÑA DE HISTORIAL Y ANÁLISIS
+# 12. PESTAÑA 2: HISTORIAL Y ANALÍTICA
 # ============================================================
 
 with tab_historial:
+    st.markdown('<div class="section-title-eng">Historial y Consultas de Producción</div>', unsafe_allow_html=True)
+    st.caption(f"Fuente de datos activa: {ARCHIVOS_EXCEL[planta]}")
 
-    st.markdown(
-        '<div class="section-title">Historial de producción</div>',
-        unsafe_allow_html=True
-    )
+    df_hist = leer_historial(planta)
 
-    st.caption(f"Archivo consultado: {ARCHIVOS_EXCEL[planta]}")
-
-    df_historial = leer_historial(planta)
-
-    if df_historial is not None:
-
-        if df_historial.empty:
-            st.info(
-                "Todavía no hay registros para esta planta. "
-                "Guarda una operación para comenzar el historial."
-            )
-
+    if df_hist is not None:
+        if df_hist.empty:
+            st.info("No se registran datos previos almacenados para esta planta.")
         else:
-            col_f1, col_f2, col_f3 = st.columns(3)
+            cf1, cf2, cf3 = st.columns(3)
+            with cf1:
+                ops_list = sorted(df_hist["Operario"].dropna().astype(str).unique().tolist())
+                filtro_op = st.selectbox("Filtrar por Operario", ["Todos"] + ops_list, key=f"f_op_{planta}")
+            with cf2:
+                maqs_list = sorted(df_hist["Máquina"].dropna().astype(str).unique().tolist())
+                filtro_mq = st.selectbox("Filtrar por Máquina", ["Todas"] + maqs_list, key=f"f_mq_{planta}")
+            with cf3:
+                filtro_txt = st.text_input("Búsqueda por Orden (OP)", placeholder="Ingrese OP...", key=f"f_txt_{planta}")
 
-            with col_f1:
-                operadores_historial = sorted(
-                    df_historial["Operario"]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                    .tolist()
-                )
+            df_view = df_hist.copy()
+            if filtro_op != "Todos":
+                df_view = df_view[df_view["Operario"].astype(str) == filtro_op]
+            if filtro_mq != "Todas":
+                df_view = df_view[df_view["Máquina"].astype(str) == filtro_mq]
+            if filtro_txt.strip():
+                df_view = df_view[df_view["Orden"].astype(str).str.contains(filtro_txt.strip(), case=False, na=False)]
 
-                filtro_operario = st.selectbox(
-                    "Filtrar por operario",
-                    ["Todos"] + operadores_historial,
-                    key=f"filtro_operario_{planta}"
-                )
+            tot_regs = len(df_view)
+            tot_ciclo_val = pd.to_numeric(df_view["Ciclo Real (min)"], errors="coerce").fillna(0).sum()
+            tot_paros_val = pd.to_numeric(df_view["Paro Máquina (min)"], errors="coerce").fillna(0).sum()
 
-            with col_f2:
-                maquinas_historial = sorted(
-                    df_historial["Máquina"]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                    .tolist()
-                )
+            ch1, ch2, ch3 = st.columns(3)
+            ch1.metric("Registros Filtrados", tot_regs)
+            ch2.metric("Suma Ciclo Real", f"{tot_ciclo_val:.2f} min")
+            ch3.metric("Suma Paros de Máquina", f"{tot_paros_val:.2f} min")
 
-                filtro_maquina = st.selectbox(
-                    "Filtrar por máquina",
-                    ["Todas"] + maquinas_historial,
-                    key=f"filtro_maquina_{planta}"
-                )
+            st.dataframe(df_view, use_container_width=True, hide_index=True)
 
-            with col_f3:
-                filtro_op = st.text_input(
-                    "Buscar orden de producción",
-                    placeholder="Escribe una OP",
-                    key=f"filtro_op_{planta}"
-                )
-
-            df_filtrado = df_historial.copy()
-
-            if filtro_operario != "Todos":
-                df_filtrado = df_filtrado[
-                    df_filtrado["Operario"].astype(str) == filtro_operario
-                ]
-
-            if filtro_maquina != "Todas":
-                df_filtrado = df_filtrado[
-                    df_filtrado["Máquina"].astype(str) == filtro_maquina
-                ]
-
-            if filtro_op.strip():
-                df_filtrado = df_filtrado[
-                    df_filtrado["Orden"]
-                    .astype(str)
-                    .str.contains(filtro_op.strip(), case=False, na=False)
-                ]
-
-            # Indicadores calculados a partir del historial filtrado
-            total_registros = len(df_filtrado)
-
-            if "Ciclo Real (min)" in df_filtrado.columns:
-                total_ciclo = pd.to_numeric(
-                    df_filtrado["Ciclo Real (min)"], errors="coerce"
-                ).fillna(0).sum()
-            else:
-                total_ciclo = 0
-
-            if "Paro Máquina (min)" in df_filtrado.columns:
-                total_paros = pd.to_numeric(
-                    df_filtrado["Paro Máquina (min)"], errors="coerce"
-                ).fillna(0).sum()
-            else:
-                total_paros = 0
-
-            if "Espera Operario (min)" in df_filtrado.columns:
-                total_espera = pd.to_numeric(
-                    df_filtrado["Espera Operario (min)"], errors="coerce"
-                ).fillna(0).sum()
-            else:
-                total_espera = 0
-
-            st.markdown("### Resumen del filtrado")
-            col_h1, col_h2, col_h3 = st.columns(3)
-            col_h1.metric("Registros encontrados", total_registros)
-            col_h2.metric("Total ciclo real", f"{total_ciclo:.2f} min")
-            col_h3.metric("Total paros/espera", f"{(total_paros + total_espera):.2f} min")
-
-            st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
-
-            buffer_excel = crear_excel_en_memoria(df_filtrado)
+            buffer_dl = crear_excel_en_memoria(df_view)
             st.download_button(
-                label="📥 Descargar datos filtrados en Excel",
-                data=buffer_excel,
-                file_name=f"Historial_{planta}_{datetime.date.today()}.xlsx",
+                label="Descargar Reporte Filtrado (Excel)",
+                data=buffer_dl,
+                file_name=f"Reporte_{planta}_{datetime.date.today()}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
 
 # ============================================================
-# 13. PESTAÑA DE ADMINISTRACIÓN
+# 13. PESTAÑA 3: ADMINISTRACIÓN Y SEGURIDAD
 # ============================================================
 
-with tab_administracion:
-    st.markdown(
-        '<div class="section-title">Administración y mantenimiento de datos</div>',
-        unsafe_allow_html=True
-    )
+with tab_admin:
+    st.markdown('<div class="section-title-eng">Panel de Administración de Base de Datos</div>', unsafe_allow_html=True)
+    st.warning("Acceso restringido para supervisores y analistas de costos.")
 
-    st.warning("Zona protegida para el manejo de registros de planta.")
+    pin_code = st.text_input("Ingrese PIN de Seguridad Autorizado", type="password", key=f"pin_adm_{planta}")
 
-    pin_ingresado = st.text_input(
-        "Ingresa el PIN de seguridad para habilitar acciones de administración",
-        type="password",
-        key=f"pin_admin_{planta}"
-    )
-
-    if pin_ingresado == PIN_EXPORTACION:
-        st.success("PIN correcto. Acceso autorizado.")
-
+    if pin_code == PIN_EXPORTACION:
+        st.success("Acceso autorizado con éxito.")
         if os.path.exists(ARCHIVOS_EXCEL[planta]):
-            with open(ARCHIVOS_EXCEL[planta], "rb") as archivo_binario:
+            with open(ARCHIVOS_EXCEL[planta], "rb") as bin_file:
                 st.download_button(
-                    label=f"📥 Descargar base de datos completa ({planta})",
-                    data=archivo_binario,
+                    label=f"Descargar Base de Datos Completa ({planta})",
+                    data=bin_file,
                     file_name=ARCHIVOS_EXCEL[planta],
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
 
-            if st.button("🗑️ Borrar historial de esta planta", type="secondary", use_container_width=True):
+            if st.button("Eliminar / Reiniciar Historial de Planta", type="secondary", use_container_width=True):
                 try:
                     os.remove(ARCHIVOS_EXCEL[planta])
-                    st.success("Historial eliminado correctamente.")
+                    st.success("Base de datos reiniciada correctamente.")
                     st.rerun()
-                except Exception as e:
-                    st.error(f"No se pudo eliminar el archivo: {e}")
+                except Exception as exc:
+                    st.error(f"No se pudo eliminar el archivo: {exc}")
         else:
-            st.info("No hay archivo de base de datos creado todavía para esta planta.")
-
-    elif pin_ingresado != "":
+            st.info("No existe un archivo físico de base de datos para esta planta.")
+    elif pin_code != "":
         st.error("PIN incorrecto.")
