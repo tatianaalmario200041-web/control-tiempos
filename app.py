@@ -1,836 +1,942 @@
-import json
-import altair as alt
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import datetime
+import time
+import os
+import json
+import pytz
+
+# ============================================================
+# 1. CONFIGURACIÓN GENERAL E INDUSTRIAL
+# ============================================================
 
 st.set_page_config(
-    page_title="Finanzas Tatis Pro - App Definitiva",
-    page_icon="🌸",
+    page_title="TOMA DE TIEMPOS MODERLINE",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded"
 )
 
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 13px;
-        color: #3E2723;
-    }
-    
-    .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 100% !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }
-    
-    .main {
-        background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 50%, #CE93D8 100%);
-    }
-    
-    [data-testid="stSidebar"] {
-        min-width: 330px;
-        max-width: 360px;
-        background: linear-gradient(180deg, #E1BEE7 0%, #CE93D8 100%);
-        border-right: 2px solid #AB47BC;
-    }
-    
-    .header-container {
-        text-align: center;
-        background: linear-gradient(135deg, #7B1FA2 0%, #8E24AA 50%, #C2185B 100%);
-        padding: 14px 18px;
-        border-radius: 14px;
-        border: 2px solid #F3E5F5;
-        box-shadow: 0 4px 15px rgba(123, 31, 162, 0.3);
-        margin-bottom: 12px;
-    }
-    
-    .header-title {
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 900;
-        font-size: 1.6rem;
-        color: #FFFFFF;
-        margin: 0;
-        letter-spacing: 0.5px;
-    }
+ZONA_BOGOTA = pytz.timezone("America/Bogota")
+PIN_EXPORTACION = "190520"
 
-    .stButton>button {
-        background: linear-gradient(135deg, #8E24AA 0%, #D81B60 100%);
-        color: white;
-        border-radius: 8px;
-        padding: 0.3rem 0.6rem;
-        font-weight: 700;
-        font-size: 0.75rem;
-        border: none;
-        box-shadow: 0 2px 6px rgba(142, 36, 170, 0.3);
-        width: 100%;
-        transition: all 0.2s ease;
-    }
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #6A1B9A 0%, #AD1457 100%);
-        transform: translateY(-1px);
-        color: white;
-    }
+ARCHIVOS_EXCEL = {
+    "Metalmecánica": "Registro_Produccion_Metalmecanica.xlsx",
+    "Maderas": "Registro_Produccion_Maderas.xlsx"
+}
 
-    .metric-card-sidebar {
-        background-color: rgba(255, 255, 255, 0.95);
-        padding: 8px 10px;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(123, 31, 162, 0.15);
-        border: 1.5px solid #BA68C8;
-        text-align: center;
-        margin-bottom: 6px;
-    }
-    .metric-value-gigante {
-        color: #6A1B9A; 
-        font-size: 1.2rem; 
-        font-weight: 900; 
-        margin: 1px 0;
-    }
+ARCHIVOS_OPERARIOS = {
+    "Metalmecánica": "Lista_Operarios_Metalmecanica.json",
+    "Maderas": "Lista_Operarios_Maderas.json"
+}
 
-    .config-box-compact {
-        background: rgba(255, 255, 255, 0.95);
-        padding: 10px 12px;
-        border-radius: 12px;
-        border: 1.5px solid #BA68C8;
-        box-shadow: 0 3px 10px rgba(123, 31, 162, 0.1);
-        margin-bottom: 10px;
-    }
-    
-    .kiut-card-grid {
-        background-color: rgba(255, 255, 255, 0.96);
-        padding: 12px 14px;
-        border-radius: 10px;
-        border: 1.5px solid #CE93D8;
-        box-shadow: 0 2px 8px rgba(123, 31, 162, 0.12);
-        margin-bottom: 12px;
-    }
+COLUMNAS_REGISTRO = [
+    "Planta",
+    "Operario",
+    "Orden",
+    "Fecha",
+    "Turno",
+    "Máquina",
+    "Proyecto",
+    "Detalle Pieza",
+    "Material",
+    "Espesor/Calibre",
+    "Cantidad Lote",
+    "Piezas OK",
+    "Setup (min)",
+    "Tiempo Estándar (min)",
+    "Ciclo Real (min)",
+    "Espera Operario (min)",
+    "Paro Máquina (min)",
+    "Descargue (min)",
+    "Motivo Paro",
+    "Hora Inicio",
+    "Hora Fin"
+]
 
-    .global-dark-box-sidebar {
-        background: linear-gradient(135deg, #4A148C 0%, #7B1FA2 100%);
-        padding: 8px;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        border: 2px solid #E1BEE7;
-        margin-top: 4px;
-        margin-bottom: 4px;
-        box-shadow: 0 3px 8px rgba(74, 20, 140, 0.3);
-    }
-    
-    .liberado-box {
-        background: linear-gradient(135deg, #F3E5F5 0%, #FCE4EC 100%);
-        padding: 6px 10px;
-        border-radius: 8px;
-        border: 1.5px solid #BA68C8;
-        text-align: center;
-        margin-bottom: 6px;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
+# ============================================================
+# 2. CONFIGURACIÓN DE PLANTAS Y PALETA DE COLORES TÉCNICA
+# ============================================================
 
-
-def formato_COP(valor):
-    return f"$ {valor:,.0f}".replace(",", ".")
-
-
-# INICIALIZACIÓN DE OBLIGACIONES BASE SEGÚN ACUERDO MILIMÉTRICO (Octubre 2026 - Enero 2027)
-if "obligaciones_base" not in st.session_state:
-    st.session_state.obligaciones_base = [
-        # --- QUINCENA: 30 DE OCTUBRE / FIN DE OCTUBRE ---
-        {
-            "id": "cristian_pago",
-            "nombre": "Pago Neto a Cristian",
-            "valor": 308000.0,
-            "tipo": "Transferencia / Cruce",
-            "periodo": "Fin de Octubre (Oct 30)",
-            "fecha_pago": "Octubre 30",
-        },
-        {
-            "id": "nicolas_base",
-            "nombre": "Saldo Pendiente Nicolás",
-            "valor": 60000.0,
-            "tipo": "Deuda Base",
-            "periodo": "Fin de Octubre (Oct 30)",
-            "fecha_pago": "Octubre 30",
-        },
-        {
-            "id": "addi_alkosto",
-            "nombre": "Addi - Alkosto / Televisor (De Cristian)",
-            "valor": 286000.0,
-            "tipo": "Crédito Addi",
-            "periodo": "Fin de Octubre (Oct 30)",
-            "fecha_pago": "Octubre 30",
-        },
-        {
-            "id": "addi_totto",
-            "nombre": "Addi - Totto (Cuota 3 de 5)",
-            "valor": 68370.0,
-            "tipo": "Crédito Addi",
-            "total": 5,
-            "pagadas": 2,
-            "periodo": "Fin de Octubre (Oct 30)",
-            "fecha_pago": "Octubre 30",
-        },
-        {
-            "id": "addi_puntos",
-            "nombre": "Addi - Puntos Colombia (Cuota 8 de 9)",
-            "valor": 68370.0,
-            "tipo": "Crédito Addi",
-            "total": 9,
-            "pagadas": 7,
-            "periodo": "Fin de Octubre (Oct 30)",
-            "fecha_pago": "Octubre 30",
-        },
-        {
-            "id": "camilo_oct",
-            "nombre": "Última Cuota de Camilo",
-            "valor": 373500.0,
-            "tipo": "Crédito Final",
-            "total": 6,
-            "pagadas": 5,
-            "periodo": "Fin de Octubre (Oct 30)",
-            "fecha_pago": "Octubre 31",
-        },
-        # --- MARTES DE NICOLÁS (NOVIEMBRE) ---
-        {
-            "id": "nic_mar_3",
-            "nombre": "1.ª Cuota Martes Nicolás",
-            "valor": 360000.0,
-            "tipo": "Préstamo Semanal",
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "Martes 3 Nov",
-        },
-        {
-            "id": "nic_mar_10",
-            "nombre": "2.ª Cuota Martes Nicolás",
-            "valor": 360000.0,
-            "tipo": "Préstamo Semanal",
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "Martes 10 Nov",
-        },
-        {
-            "id": "nic_mar_17",
-            "nombre": "3.ª Cuota Martes Nicolás",
-            "valor": 360000.0,
-            "tipo": "Préstamo Semanal",
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "Martes 17 Nov",
-        },
-        {
-            "id": "nic_mar_24",
-            "nombre": "4.ª Cuota Martes Nicolás (Final)",
-            "valor": 360000.0,
-            "tipo": "Préstamo Semanal",
-            "periodo": "Fin de Mes (Noviembre)",
-            "fecha_pago": "Martes 24 Nov",
-        },
-        # --- SERVICIOS Y TARJETAS (NOVIEMBRE) ---
-        {
-            "id": "gas_nov",
-            "nombre": "Factura del Gas (Completa)",
-            "valor": 800000.0,
-            "tipo": "Servicio Fijo",
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "10 Noviembre",
-        },
-        {
-            "id": "tc_nov",
-            "nombre": "Cuota Tarjeta de Crédito (TC)",
-            "valor": 160000.0,
-            "tipo": "Crédito TC",
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "10 Noviembre",
-        },
-        # --- SISTECREDITO (MITAD DE NOVIEMBRE - CIERRE) ---
-        {
-            "id": "sist_vestido",
-            "nombre": "Sistecredito - Vestido (Cuota Final)",
-            "valor": 39413.0,
-            "tipo": "Crédito Sistecredito",
-            "total": 4,
-            "pagadas": 3,
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "15 Noviembre",
-        },
-        {
-            "id": "sist_sudadera",
-            "nombre": "Sistecredito - Sudadera (Cuota Final)",
-            "valor": 59599.0,
-            "tipo": "Crédito Sistecredito",
-            "total": 4,
-            "pagadas": 3,
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "15 Noviembre",
-        },
-        {
-            "id": "sist_maleta",
-            "nombre": "Sistecredito - Maleta Totto (Cuota Final)",
-            "valor": 66051.0,
-            "tipo": "Crédito Sistecredito",
-            "total": 4,
-            "pagadas": 3,
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "15 Noviembre",
-        },
-        # --- ALEXA Y GERARDO ---
-        {
-            "id": "alexa_pago",
-            "nombre": "Pago Total Deuda Alexa",
-            "valor": 1000000.0,
-            "tipo": "Préstamo (Moderline)",
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "15 Noviembre",
-        },
-        {
-            "id": "gerardo_sep_nov",
-            "nombre": "Separación 1.ª Cuota Gerardo",
-            "valor": 275000.0,
-            "tipo": "Reserva Deuda",
-            "periodo": "Mitad de Mes (Noviembre)",
-            "fecha_pago": "Apartado el 15 (Paga el 25)",
-        },
-        {
-            "id": "gerardo_sep_dic",
-            "nombre": "Separación 3.ª Cuota Gerardo",
-            "valor": 275000.0,
-            "tipo": "Reserva Deuda",
-            "periodo": "Mitad de Mes (Diciembre)",
-            "fecha_pago": "Apartado el 15 (Paga el 25)",
-        },
-    ]
-
-if "pagos_por_periodo" not in st.session_state:
-    st.session_state.pagos_por_periodo = {}
-if "imprevistos_por_periodo" not in st.session_state:
-    st.session_state.imprevistos_por_periodo = {}
-if "prestamos_por_cobrar" not in st.session_state:
-    st.session_state.prestamos_por_cobrar = [
-        {"deudor": "Karen", "valor": 880000.0, "fecha_pago": "30 Octubre (Efectivo)"},
-        {"deudor": "Gerardo", "valor": 900000.0, "fecha_pago": "30 Octubre (Efectivo)"},
-    ]
-
-# TÍTULO PRINCIPAL KIUT
-st.markdown(
-    """
-    <div class="header-container">
-        <h1 class="header-title">🌸 Finanzas Tatis Pro - App Definitiva 🌸</h1>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
-
-# CONFIGURACIÓN SUPERIOR COMPACTA
-st.markdown('<div class="config-box-compact">', unsafe_allow_html=True)
-col_cfg1, col_cfg2, col_cfg3, col_cfg4 = st.columns(4)
-with col_cfg1:
-    efectivo_inicial = st.number_input(
-        "Efectivo en Mano (COP)", value=100000.0, step=10000.0
-    )
-with col_cfg2:
-    nomina_quincenal_neta = st.number_input(
-        "Salario Quincenal Neta", value=1194000.0, step=10000.0
-    )
-with col_cfg3:
-    mes_seleccionado = st.selectbox(
-        "Mes de Gestión",
-        [
-            "Octubre 2026",
-            "Noviembre 2026",
-            "Diciembre 2026",
-            "Enero 2027",
+CONFIG_PLANTAS = {
+    "Metalmecánica": {
+        "color_primario": "#0284c7",      # Azul Cobalto Técnico
+        "color_secundario": "#0369a1",
+        "bg_badge": "#f0f9ff",
+        "text_badge": "#0369a1",
+        "bg_timer_active": "#f0f9ff",
+        "border_active": "#0284c7",
+        "maquinas": [
+            "Punzonadora Trumpf Trumatic 2000R",
+            "Cortadora Láser CNC (MT 36) - F 3015",
+            "Plegadora Durma CNC",
+            "Dobladora Dener",
+            "Soldadura MIG",
+            "Soldadura PUNTO",
+            "Horno Pintura",
+            "Soldadura LASER",
+            "Otra Máquina"
         ],
-        key="select_mes_main",
-    )
-with col_cfg4:
-    quincena_tipo = st.selectbox(
-        "Bloque / Ciclo",
-        [
-            "Fin de Octubre (Oct 30)",
-            "Mitad de Mes (Noviembre)",
-            "Fin de Mes (Noviembre)",
-            "Mitad de Mes (Diciembre)",
-            "Fin de Mes (Diciembre)",
+        "materiales": [
+            "CR (Cold Rolled)",
+            "HR (Hot Rolled)",
+            "Acero Inoxidable",
+            "Aluminio",
+            "Lámina Galvanizada",
+            "Otro Material"
         ],
-        key="select_quincena_main",
-    )
-st.markdown("</div>", unsafe_allow_html=True)
+        "calibres": [
+            "0.8 mm (C22)",
+            "0.9 mm (C20)",
+            "1.2 mm (C18)",
+            "1.5 mm (C16)",
+            "1.9 mm (C14)",
+            "2.5 mm (C12)",
+            '3.0 mm (1/8")',
+            '4.5 mm (3/16")',
+            '6.0 mm (1/4")',
+            "OTRO / LIBRE (Escribir en vivo)"
+        ],
+        "motivos_paro": [
+            "Falla mecánica",
+            "Falla eléctrica",
+            "Falla neumática",
+            "Falta de material",
+            "Falta de herramientas",
+            "Ajuste o calibración",
+            "Cambio de referencia",
+            "Mantenimiento",
+            "Falta de programación",
+            "Espera de calidad",
+            "Falta de operario",
+            "Pausa no programada",
+            "Sin energía",
+            "Otro motivo"
+        ]
+    },
 
-clave_periodo_actual = f"{mes_seleccionado} - {quincena_tipo}"
-
-if clave_periodo_actual not in st.session_state.pagos_por_periodo:
-    st.session_state.pagos_por_periodo[clave_periodo_actual] = {}
-if clave_periodo_actual not in st.session_state.imprevistos_por_periodo:
-    st.session_state.imprevistos_por_periodo[clave_periodo_actual] = []
-
-obligaciones_activas = st.session_state.obligaciones_base
-pagos_actuales = st.session_state.pagos_por_periodo[clave_periodo_actual]
-
-# FILTRAR OBLIGACIONES SEGÚN EL BLOQUE SELECCIONADO
-items_filtrados = []
-for item in obligaciones_activas:
-    p = item.get("periodo", "")
-    if quincena_tipo == "Fin de Octubre (Oct 30)" and "Octubre" in p:
-        items_filtrados.append(item)
-    elif quincena_tipo == "Mitad de Mes (Noviembre)" and "Mitad de Mes (Noviembre)" in p:
-        items_filtrados.append(item)
-    elif quincena_tipo == "Fin de Mes (Noviembre)" and "Fin de Mes (Noviembre)" in p:
-        items_filtrados.append(item)
-    elif quincena_tipo == "Mitad de Mes (Diciembre)" and "Mitad de Mes (Diciembre)" in p:
-        items_filtrados.append(item)
-
-total_pagado_actual = sum(
-    item["valor"] for item in items_filtrados if pagos_actuales.get(item["id"], False)
-)
-total_imprevistos = sum(
-    imp["valor"]
-    for imp in st.session_state.imprevistos_por_periodo[clave_periodo_actual]
-)
-
-# CÁLCULO DE INGRESOS SEGÚN EL BLOQUE
-ingresos_bloque = nomina_quincenal_neta
-if "Octubre" in quincena_tipo:
-    ingresos_bloque += 900000.0 + 880000.0 + efectivo_inicial
-elif "Mitad de Mes (Noviembre)" in quincena_tipo:
-    ingresos_bloque += 1500000.0  # Préstamo Moderline de Alexa
-
-quincena_que_queda = ingresos_bloque - total_pagado_actual - total_imprevistos
-
-# -------------------------------------------------------------
-# BARRA LATERAL UNIFORME Y KIUT
-# -------------------------------------------------------------
-st.sidebar.markdown(f"### 💜 {clave_periodo_actual}")
-
-st.sidebar.markdown(
-    f"""
-    <div class="liberado-box">
-        <span style="font-size:0.7rem; font-weight:800; color:#6A1B9A;">✨ Prima de Diciembre ✨</span><br>
-        <span style="font-size:1.0rem; font-weight:900; color:#8E24AA;">100% Blindada / Intacta</span>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
-
-st.sidebar.markdown(
-    f"""
-    <div class="metric-card-sidebar">
-        <h6 style="color:#6A1B9A; margin:0; font-weight:700;">📥 Entradas de este Bloque</h6>
-        <div class="metric-value-gigante">{formato_COP(ingresos_bloque)}</div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
-
-st.sidebar.markdown(
-    f"""
-    <div class="metric-card-sidebar">
-        <h6 style="color:#7B1FA2; margin:0; font-weight:700;">📤 Pagado / Separado</h6>
-        <div class="metric-value-gigante">{formato_COP(total_pagado_actual)}</div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
-
-st.sidebar.markdown(
-    f"""
-    <div class="metric-card-sidebar">
-        <h6 style="color:#AD1457; margin:0; font-weight:700;">🚨 Imprevistos Registrados</h6>
-        <div class="metric-value-gigante">{formato_COP(total_imprevistos)}</div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
-
-color_queda = "#7B1FA2" if quincena_que_queda >= 0 else "#C2185B"
-st.sidebar.markdown(
-    f"""
-    <div class="metric-card-sidebar" style="border: 2px solid {color_queda}; background: #FCE4EC;">
-        <h6 style="color:{color_queda}; margin:0; font-weight:800;">✨ SALDO REALMENTE LIBRE ✨</h6>
-        <div class="metric-value-gigante" style="color:{color_queda}; font-size:1.3rem;">{formato_COP(quincena_que_queda)}</div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
-
-total_deuda_global = sum(item["valor"] for item in obligaciones_activas)
-st.sidebar.markdown(
-    f"""
-<div class="global-dark-box-sidebar">
-    <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">👑 Deuda Global Planificada</div>
-    <div style="font-size: 1.05rem; font-weight: 900; color: #FFFFFF; margin-top:2px;">{formato_COP(total_deuda_global)}</div>
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-# GESTIÓN DE RESPALDO (EXPORTAR / IMPORTAR)
-with st.sidebar.expander("💾 Guardar / Cargar Respaldo"):
-    data_backup = {
-        "obligaciones_base": st.session_state.obligaciones_base,
-        "pagos_por_periodo": st.session_state.pagos_por_periodo,
-        "imprevistos_por_periodo": st.session_state.imprevistos_por_periodo,
-        "prestamos_por_cobrar": st.session_state.prestamos_por_cobrar,
+    "Maderas": {
+        "color_primario": "#ea580c",      # Naranja Óxido Técnico
+        "color_secundario": "#c2410c",
+        "bg_badge": "#fff7ed",
+        "text_badge": "#c2410c",
+        "bg_timer_active": "#fffaf5",
+        "border_active": "#ea580c",
+        "maquinas": [
+            "Prensa Hidráulica MH3848",
+            "Canteadora E-700-3 Pro",
+            "Fresadora CNC ELECNC-1530ATC",
+            "Seccionadora Horizontal MD03",
+            "Enchapadora Cantos MD024",
+            "Escuadradora MD025",
+            "Trompo Tupi Eje Inclinable",
+            "Prensa Hidráulica Fría MD028",
+            "Taladro Múltiple Alfa 21T",
+            "Taladro de Árbol KTC-18FC",
+            "Otra Máquina Maderas"
+        ],
+        "materiales": [
+            "Tablero MDF estándar (Crudo/Melamínico)",
+            "Tablero MDF Enchapado",
+            "Aglomerado MDP Melamínico",
+            "Madera Sólida (Pino / Teca)",
+            "Contrachapado / Triplex",
+            "Tablero OSB Estructural",
+            "Otro Material Maderas"
+        ],
+        "calibres": [
+            "14 mm",
+            "18 mm",
+            "25 mm",
+            "30 mm",
+            "40 mm",
+            "50 mm",
+            "OTRO / LIBRE (Escribir en vivo)"
+        ],
+        "motivos_paro": [
+            "Falla mecánica",
+            "Falla eléctrica",
+            "Falla hidráulica",
+            "Falta de tablero o madera",
+            "Falta de herramientas",
+            "Cambio de referencia",
+            "Ajuste de máquina",
+            "Cambio de cuchilla o herramienta",
+            "Mantenimiento",
+            "Espera de calidad",
+            "Falta de operario",
+            "Falta de programación",
+            "Falta de adhesivo o insumo",
+            "Otro motivo"
+        ]
     }
-    json_str = json.dumps(data_backup, ensure_ascii=False, indent=4)
-    st.download_button(
-        "📥 Descargar Archivo Respaldo",
-        data=json_str,
-        file_name="respaldo_finanzas_tatis_pro.json",
-        mime="application/json",
+}
+
+# Inicialización segura de la planta actual para los estilos dinámicos
+if "planta_actual" not in st.session_state:
+    st.session_state["planta_actual"] = "Metalmecánica"
+
+planta_activa_ini = st.session_state["planta_actual"]
+CFG = CONFIG_PLANTAS[planta_activa_ini]
+
+COLOR_PRI = CFG["color_primario"]
+COLOR_SEC = CFG["color_secundario"]
+BG_BADGE = CFG["bg_badge"]
+TXT_BADGE = CFG["text_badge"]
+BG_TIMER_ACT = CFG["bg_timer_active"]
+BORDER_ACT = CFG["border_active"]
+
+# ============================================================
+# 3. ESTILOS CSS DE NIVEL INGENIERÍA INDUSTRIAL AVANZADA
+# ============================================================
+
+st.markdown(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+html, body, [class*="css"] {{
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #1e293b;
+}}
+
+.stApp {{
+    background: #f8fafc;
+}}
+
+[data-testid="stHeader"] {{
+    background: rgba(248, 250, 252, 0.95);
+}}
+
+.block-container {{
+    padding-top: 1.2rem;
+    padding-bottom: 2rem;
+    max-width: 1600px;
+}}
+
+/* Encabezado Técnico Dinámico */
+.engineering-header {{
+    background: #0f172a;
+    border-left: 5px solid {COLOR_PRI};
+    padding: 22px 26px;
+    border-radius: 8px;
+    color: white;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}}
+
+.engineering-title {{
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    margin: 0;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}}
+
+.plant-badge {{
+    background-color: {BG_BADGE};
+    color: {TXT_BADGE};
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}}
+
+.engineering-subtitle {{
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}}
+
+/* Títulos de Secciones Técnicas */
+.section-title-eng {{
+    font-size: 13px;
+    font-weight: 800;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin: 16px 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-left: 3px solid {COLOR_PRI};
+}}
+
+/* Tarjetas de Métricas Ejecutivas */
+.metric-card-eng {{
+    background: white;
+    padding: 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}}
+
+.metric-label-eng {{
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}}
+
+.metric-value-eng {{
+    color: #0f172a;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    margin-top: 6px;
+    letter-spacing: -0.5px;
+}}
+
+/* Tarjetas de Cronómetros de Alta Precisión Mejoradas */
+.timer-card-eng {{
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
+}}
+
+.timer-card-eng-active {{
+    background: {BG_TIMER_ACT};
+    border: 2px solid {BORDER_ACT};
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}}
+
+.timer-header-row {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}}
+
+.timer-name-eng {{
+    font-size: 11px;
+    font-weight: 800;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}}
+
+.timer-status-idle {{
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}}
+
+.timer-status-active {{
+    font-size: 9px;
+    font-weight: 800;
+    color: #ffffff;
+    background: {COLOR_PRI};
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}}
+
+.timer-digits-eng {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    margin: 4px 0;
+}}
+
+.timer-desc-eng {{
+    font-size: 11px;
+    color: #64748b;
+}}
+
+/* Forzar color exacto de la planta en los botones de Iniciar y de Acción Principal */
+div.stButton > button[kind="primary"] {{
+    background-color: {COLOR_PRI} !important;
+    border-color: {COLOR_PRI} !important;
+    color: #ffffff !important;
+}}
+
+div.stButton > button[kind="primary"]:hover {{
+    background-color: {COLOR_SEC} !important;
+    border-color: {COLOR_SEC} !important;
+    color: #ffffff !important;
+}}
+
+div.stButton > button {{
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+    min-height: 38px !important;
+}}
+
+div[data-testid="stDownloadButton"] button {{
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    min-height: 40px !important;
+}}
+
+label {{
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    color: #334155 !important;
+}}
+
+footer {{
+    visibility: hidden;
+}}
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================================
+# 4. FUNCIONES DE FECHA Y FORMATO
+# ============================================================
+
+def ahora_bogota():
+    return datetime.datetime.now(ZONA_BOGOTA)
+
+
+def obtener_hora_bogota():
+    return ahora_bogota().strftime("%H:%M:%S")
+
+
+def obtener_fecha_bogota():
+    return ahora_bogota().date()
+
+
+def formatear_duracion(segundos):
+    segundos = max(0, int(segundos))
+    horas, resto = divmod(segundos, 3600)
+    minutos, segundos = divmod(resto, 60)
+    return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
+
+
+def minutos_desde_segundos(segundos):
+    return round(max(0, segundos) / 60, 2)
+
+
+def inicializar_estado(clave, valor):
+    if clave not in st.session_state:
+        st.session_state[clave] = valor
+
+
+# ============================================================
+# 5. GESTIÓN DE CRONÓMETROS Y OPERARIOS
+# ============================================================
+
+CRONOMETROS = {
+    "setup": {
+        "nombre": "Setup / Alistamiento",
+        "descripcion": "Preparación inicial y puesta a punto de máquina"
+    },
+    "ciclo": {
+        "nombre": "Ciclo Real Operativo",
+        "descripcion": "Tiempo efectivo de procesamiento y fabricación"
+    },
+    "descargue": {
+        "nombre": "Descargue y Post-Corte",
+        "descripcion": "Retiro, evacuación y despacho de piezas"
+    },
+    "paros": {
+        "nombre": "Paro / Tiempo Muerto de Máquina",
+        "descripcion": "Detenciones imprevistas o mecánicas"
+    },
+    "espera": {
+        "nombre": "Operario en Espera",
+        "descripcion": "Tiempos ociosos o espera de insumos"
+    }
+}
+
+
+def inicializar_cronometros():
+    for clave in CRONOMETROS:
+        inicializar_estado(f"{clave}_acumulado", 0.0)
+        inicializar_estado(f"{clave}_inicio", None)
+
+
+def segundos_cronometro(clave):
+    acumulado = float(st.session_state.get(f"{clave}_acumulado", 0.0))
+    inicio = st.session_state.get(f"{clave}_inicio")
+    if inicio is not None:
+        acumulado += time.time() - inicio
+    return max(0.0, acumulado)
+
+
+def cronometros_activos_count():
+    return sum(
+        1 for clave in CRONOMETROS
+        if st.session_state.get(f"{clave}_inicio") is not None
     )
 
-    uploaded_file = st.file_uploader("📤 Cargar Archivo Respaldo", type=["json"])
-    if uploaded_file is not None:
+
+def iniciar_cronometro(clave):
+    st.session_state[f"{clave}_inicio"] = time.time()
+    if not st.session_state.get("hora_inicio_registro"):
+        st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
+
+
+def pausar_cronometro(clave):
+    inicio = st.session_state.get(f"{clave}_inicio")
+    if inicio is not None:
+        st.session_state[f"{clave}_acumulado"] += time.time() - inicio
+        st.session_state[f"{clave}_inicio"] = None
+
+
+def reiniciar_cronometros():
+    for clave in CRONOMETROS:
+        st.session_state[f"{clave}_acumulado"] = 0.0
+        st.session_state[f"{clave}_inicio"] = None
+    st.session_state["hora_inicio_registro"] = None
+
+
+inicializar_cronometros()
+inicializar_estado("hora_inicio_registro", None)
+
+
+def cargar_operarios(planta):
+    archivo = ARCHIVOS_OPERARIOS[planta]
+    if not os.path.exists(archivo):
+        return []
+    try:
+        with open(archivo, "r", encoding="utf-8") as f:
+            datos = json.load(f)
+        if isinstance(datos, list):
+            return sorted(set(str(x).strip() for x in datos if str(x).strip()))
+        return []
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def guardar_operarios(planta, operarios):
+    archivo = ARCHIVOS_OPERARIOS[planta]
+    with open(archivo, "w", encoding="utf-8") as f:
+        json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
+
+
+# ============================================================
+# 6. MANEJO DE ARCHIVOS EXCEL
+# ============================================================
+
+def leer_historial(planta):
+    archivo = ARCHIVOS_EXCEL[planta]
+    if not os.path.exists(archivo):
+        return pd.DataFrame(columns=COLUMNAS_REGISTRO)
+    try:
+        df = pd.read_excel(archivo, engine="openpyxl")
+        for columna in COLUMNAS_REGISTRO:
+            if columna not in df.columns:
+                df[columna] = None
+        return df[COLUMNAS_REGISTRO]
+    except Exception as e:
+        st.error(f"Error al leer el archivo de la planta. Detalle: {e}")
+        return None
+
+
+def guardar_registro(planta, registro):
+    archivo = ARCHIVOS_EXCEL[planta]
+    if os.path.exists(archivo):
         try:
-            loaded_data = json.load(uploaded_file)
-            st.session_state.obligaciones_base = loaded_data.get(
-                "obligaciones_base", st.session_state.obligaciones_base
-            )
-            st.session_state.pagos_por_periodo = loaded_data.get(
-                "pagos_por_periodo", {}
-            )
-            st.session_state.imprevistos_por_periodo = loaded_data.get(
-                "imprevistos_por_periodo", {}
-            )
-            st.session_state.prestamos_por_cobrar = loaded_data.get(
-                "prestamos_por_cobrar", []
-            )
-            st.success("¡Respaldo cargado con éxito!")
-            st.rerun()
+            df_existente = pd.read_excel(archivo, engine="openpyxl")
         except Exception as e:
-            st.error("Error al cargar el archivo.")
+            raise RuntimeError(f"No se pudo leer el historial previo: {e}")
+        for columna in COLUMNAS_REGISTRO:
+            if columna not in df_existente.columns:
+                df_existente[columna] = None
+        df_existente = df_existente[COLUMNAS_REGISTRO]
+    else:
+        df_existente = pd.DataFrame(columns=COLUMNAS_REGISTRO)
 
-# GRÁFICO DE BARRAS PORCENTUALES
-st.sidebar.markdown(
-    "<hr style='border: 1px solid #BA68C8; margin: 10px 0;'>",
-    unsafe_allow_html=True,
-)
-st.sidebar.markdown(
-    "<h4 style='color: #4A148C; font-weight: 800; text-align: center; margin-"
-    "bottom: 2px;'>💖 Distribución de Fondos</h4>",
-    unsafe_allow_html=True,
-)
-
-val_pagado = float(total_pagado_actual)
-val_pendiente = float(
-    sum(
-        item["valor"]
-        for item in items_filtrados
-        if not pagos_actuales.get(item["id"], False)
-    )
-)
-val_imprevistos = float(total_imprevistos)
-val_disponible = float(max(0.0, quincena_que_queda))
-
-total_base_calc = val_pagado + val_pendiente + val_imprevistos + val_disponible
-if total_base_calc <= 0:
-    total_base_calc = 1.0
-
-df_grafico = pd.DataFrame({
-    "Categoría": ["Pagado", "Pendiente", "Imprevistos", "Disponible"],
-    "Monto": [val_pagado, val_pendiente, val_imprevistos, val_disponible],
-    "Porcentaje": [
-        (val_pagado / total_base_calc) * 100,
-        (val_pendiente / total_base_calc) * 100,
-        (val_imprevistos / total_base_calc) * 100,
-        (val_disponible / total_base_calc) * 100,
-    ],
-})
-
-orden_categorias = ["Disponible", "Imprevistos", "Pendiente", "Pagado"]
-df_grafico["Categoría"] = pd.Categorical(
-    df_grafico["Categoría"], categories=orden_categorias, ordered=True
-)
-
-bar_chart = (
-    alt.Chart(df_grafico)
-    .mark_bar(cornerRadius=6)
-    .encode(
-        x=alt.X(
-            "Porcentaje:Q",
-            title=None,
-            axis=None,
-            scale=alt.Scale(domain=[0, 100]),
-        ),
-        y=alt.Y(
-            "Categoría:N",
-            title=None,
-            axis=alt.Axis(labelFontSize=11, labelColor="#3E2723"),
-        ),
-        color=alt.Color(
-            "Categoría:N",
-            scale=alt.Scale(
-                domain=["Pagado", "Pendiente", "Imprevistos", "Disponible"],
-                range=["#6A1B9A", "#D81B60", "#BA68C8", "#F48FB1"],
-            ),
-            legend=None,
-        ),
-        tooltip=[
-            alt.Tooltip("Categoría", title="Concepto"),
-            alt.Tooltip("Monto", title="Monto Real (COP)", format="$,.0f"),
-            alt.Tooltip("Porcentaje", title="Porcentaje", format=".1f"),
-        ],
-    )
-    .properties(width=260, height=150)
-)
-
-st.sidebar.altair_chart(bar_chart, use_container_width=True)
+    nuevo = pd.DataFrame([registro], columns=COLUMNAS_REGISTRO)
+    resultado = pd.concat([df_existente, nuevo], ignore_index=True)
+    resultado.to_excel(archivo, index=False, engine="openpyxl")
 
 
-# -------------------------------------------------------------
-# PANEL CENTRAL: CONTROL DE PAGOS EN MULTICOLUMNA
-# -------------------------------------------------------------
-st.markdown(
-    f"<h4 style='color: #4A148C; font-weight: 800; margin-top: 5px;'>⚡ Control"
-    f" Milimétrico de Obligaciones ({quincena_tipo})</h4>",
-    unsafe_allow_html=True,
-)
+# ============================================================
+# 7. CONFIGURACIÓN EN BARRA LATERAL
+# ============================================================
 
-if not items_filtrados:
-    st.info(
-        "No hay obligaciones preconfiguradas para este bloque específico. ¡Puedes"
-        " agregarlas en la pestaña inferior 'Nueva Deuda'!"
+with st.sidebar:
+    st.markdown("### Configuración de Planta")
+    planta = st.radio(
+        "Seleccione planta activa",
+        options=["Metalmecánica", "Maderas"],
+        index=0 if st.session_state["planta_actual"] == "Metalmecánica" else 1,
+        key="selector_planta"
     )
 
-cols_por_fila = 3
-for i in range(0, len(items_filtrados), cols_por_fila):
-    cols = st.columns(cols_por_fila)
-    for j in range(cols_por_fila):
-        if i + j < len(items_filtrados):
-            item = items_filtrados[i + j]
-            item_id = item["id"]
-            esta_pagado = pagos_actuales.get(item_id, False)
+    if planta != st.session_state["planta_actual"]:
+        st.session_state["planta_actual"] = planta
+        st.rerun()
 
-            if "total" in item and item["total"] > 0:
-                porcentaje = int(round((item["pagadas"] / item["total"]) * 100))
-            else:
-                porcentaje = 100 if esta_pagado else 0
+    config = CONFIG_PLANTAS[planta]
 
-            with cols[j]:
-                st.markdown('<div class="kiut-card-grid">', unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("### Estado de Estación")
+    activos_qty = cronometros_activos_count()
+    if activos_qty > 0:
+        st.success(f"Cronómetros activos: {activos_qty}")
+    else:
+        st.info("Estación en pausa / Sin actividad")
 
-                if "total" in item and item["total"] > 0:
-                    progreso_html = f"""
-                        <div style="background-color: #E1BEE7; border-radius: 8px; height: 22px; width: 100%; position: relative; margin-bottom: 8px; overflow: hidden; border: 1.5px solid #BA68C8;">
-                            <div style="background: linear-gradient(135deg, #7B1FA2 0%, #8E24AA 100%); width: {porcentaje}%; height: 100%; border-radius: 6px 0 0 6px; transition: width 0.4s ease;"></div>
-                            <div style="position: absolute; width: 100%; top: 0; left: 0; text-align: center; font-size: 11px; font-weight: 800; color: #FFFFFF; line-height: 20px; text-shadow: 0px 1px 2px rgba(0,0,0,0.4);">
-                                {porcentaje}% Avance
-                            </div>
-                        </div>
-                        """
-                else:
-                    progreso_html = f"""
-                        <div style="background-color: #FCE4EC; border-radius: 8px; height: 22px; width: 100%; position: relative; margin-bottom: 8px; overflow: hidden; border: 1.5px solid #F48FB1; text-align: center; font-size: 11px; font-weight: 800; color: #AD1457; line-height: 20px;">
-                            Compromiso Fijo 🗓️
-                        </div>
-                        """
-                st.markdown(progreso_html, unsafe_allow_html=True)
+    st.caption(f"Planta: {planta}")
+    st.caption(f"Fecha: {obtener_fecha_bogota().strftime('%Y-%m-%d')}")
 
-                info_sec = (
-                    f"Cuota {item['pagadas']}/{item['total']}"
-                    if "total" in item
-                    else f"{item.get('fecha_pago', '-')}"
-                )
-                estado_txt = "✅ Pagado/Separado" if esta_pagado else "⏳ Pendiente"
-                color_est = "#6A1B9A" if esta_pagado else "#C2185B"
-
-                st.markdown(
-                    f"""
-                    <div style='font-weight:800; font-size:13.5px; color:#3E2723; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{item['nombre']}</div>
-                    <div style='font-size:0.7rem; color:#8E24AA; font-weight:700;'>{item['tipo']} • {info_sec}</div>
-                    <div style='font-weight:900; font-size:13px; color:#6A1B9A; margin-top:2px; margin-bottom: 8px;'>{formato_COP(item['valor'])} <span style='font-weight:700; color:{color_est}; font-size:11px; float:right;'>{estado_txt}</span></div>
-                """,
-                    unsafe_allow_html=True,
-                )
-
-                if not esta_pagado:
-                    if st.button(
-                        "Separar / Pagar ✅",
-                        key=f"pagar_{clave_periodo_actual}_{item_id}",
-                    ):
-                        st.session_state.pagos_por_periodo[clave_periodo_actual][
-                            item_id
-                        ] = True
-                        if "total" in item and item["pagadas"] < item["total"]:
-                            item["pagadas"] += 1
-                        st.rerun()
-                else:
-                    if st.button(
-                        "Deshacer 🔄",
-                        key=f"deshacer_{clave_periodo_actual}_{item_id}",
-                    ):
-                        st.session_state.pagos_por_periodo[clave_periodo_actual][
-                            item_id
-                        ] = False
-                        if "total" in item and item["pagadas"] > 0:
-                            item["pagadas"] -= 1
-                        st.rerun()
-                st.markdown("</div>", unsafe_allow_html=True)
+# ============================================================
+# 8. ENCABEZADO INDUSTRIAL PROFESIONAL
+# ============================================================
 
 st.markdown(
-    "<hr style='border: 1px solid #CE93D8; margin: 15px 0;'>",
-    unsafe_allow_html=True,
+    f"""
+    <div class="engineering-header" style="border-left-color: {config['color_primario']};">
+        <div class="engineering-title">
+            TOMA DE TIEMPOS MODERLINE
+            <span class="plant-badge" style="background-color: {config['bg_badge']}; color: {config['text_badge']};">{planta.upper()}</span>
+        </div>
+        <div class="engineering-subtitle">Ingeniería de Costos y Procesos Industriales • Estándar Operativo</div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-# PESTAÑAS INFERIORES PRO
-tab_deudas, tab_resumen, tab_editar, tab_prestamos, tab_extras = st.tabs([
-    "➕ Nueva Deuda",
-    "📊 Resumen General",
-    "✏️ Modificar Obligación",
-    "🤝 Entradas / Ingresos",
-    "🚨 Imprevistos & Exportar",
+# ============================================================
+# 9. PESTAÑAS PRINCIPALES
+# ============================================================
+
+tab_registro, tab_historial, tab_admin = st.tabs([
+    "Registro Operativo y Cronometraje",
+    "Historial y Analítica de Ciclos",
+    "Administración y Base de Datos"
 ])
 
-with tab_deudas:
-    with st.form(key="form_nueva_deuda_main"):
-        c_nd1, c_nd2, c_nd3 = st.columns(3)
-        with c_nd1:
-            n_nombre = st.text_input("Nombre de la obligación")
-            n_valor_cuota = st.number_input(
-                "Valor Cuota / Deuda Total", min_value=0.0, step=10000.0
-            )
-        with c_nd2:
-            n_total_cuotas = st.number_input(
-                "Total Cuotas (1 si es pago único)",
-                min_value=1,
-                value=1,
-                step=1,
-            )
-            n_periodo = st.selectbox(
-                "Asignar a Ciclo / Bloque",
-                [
-                    "Fin de Octubre (Oct 30)",
-                    "Mitad de Mes (Noviembre)",
-                    "Fin de Mes (Noviembre)",
-                    "Mitad de Mes (Diciembre)",
-                ],
-            )
-        with c_nd3:
-            n_fecha_pago = st.text_input("Fecha específica (Ej. Martes 3 Nov)")
-            st.markdown("<br>", unsafe_allow_html=True)
-            submit_deuda = st.form_submit_button("Guardar Nueva Deuda 💜")
+# ============================================================
+# 10. PESTAÑA 1: REGISTRO Y CRONÓMETROS SIMULTÁNEOS
+# ============================================================
 
-        if submit_deuda and n_nombre and n_valor_cuota > 0:
-            nuevo_id = f"deuda_nueva_{len(st.session_state.obligaciones_base)}"
-            st.session_state.obligaciones_base.append({
-                "id": nuevo_id,
-                "nombre": n_nombre,
-                "valor": n_valor_cuota,
-                "tipo": (
-                    "Crédito Nuevo" if n_total_cuotas > 1 else "Deuda Única"
-                ),
-                "total": int(n_total_cuotas),
-                "pagadas": 0,
-                "periodo": n_periodo,
-                "fecha_pago": n_fecha_pago if n_fecha_pago else "Por definir",
-            })
-            st.success("¡Deuda guardada correctamente!")
-            st.rerun()
+with tab_registro:
+    operarios = cargar_operarios(planta)
 
-with tab_resumen:
-    st.markdown(
-        f"<h4 style='color: #4A148C; font-weight: 800;'>📊 Estado General y"
-        f" Plan de Pagos</h4>",
-        unsafe_allow_html=True,
-    )
-    col_res1, col_res2 = st.columns(2)
-    with col_res1:
-        st.markdown(
-            """
-            <div class="kiut-card-grid">
-                <h5 style="color:#6A1B9A; margin-top:0;">🌸 Criterios Clave Tatis Pro</h5>
-                <p><b>1. Diciembre Protegido:</b> La prima está 100% intacta para comparendos.</p>
-                <p><b>2. Gerardo:</b> Se aparta preventivamente cada quincena del 15.</p>
-                <p><b>3. Nicolás:</b> Pagos estrictos programados los martes.</p>
-            </div>
-        """,
-            unsafe_allow_html=True,
-        )
-    with col_res2:
-        st.markdown(
-            f"""
-            <div class="kiut-card-grid">
-                <h5 style="color:#7B1FA2; margin-top:0;">🌸 Total Obligaciones Registradas</h5>
-                <p><b>Deuda Global del Plan:</b> {formato_COP(total_deuda_global)}</p>
-                <p><b>Estado de Sistecredito:</b> Cuotas finales saldándose a mediados de noviembre.</p>
-            </div>
-        """,
-            unsafe_allow_html=True,
-        )
+    st.markdown('<div class="section-title-eng">1. Datos Generales de la Orden de Producción</div>', unsafe_allow_html=True)
 
-with tab_editar:
-    st.markdown(
-        "<p style='font-weight: 700; color: #4A148C;'>Modifica el valor de"
-        " cualquier obligación activa:</p>",
-        unsafe_allow_html=True,
-    )
-    with st.form(key="form_editar_cuota_val"):
-        nombres_obligaciones = {
-            item["nombre"] + f" ({item['periodo']})": item
-            for item in st.session_state.obligaciones_base
-        }
-        sel_nombre_edit = st.selectbox(
-            "Selecciona la obligación", list(nombres_obligaciones.keys())
-        )
-        item_a_editar = nombres_obligaciones[sel_nombre_edit]
-        nuevo_valor_edit = st.number_input(
-            "Nuevo Valor (COP)",
-            value=float(item_a_editar["valor"]),
-            step=1000.0,
-        )
+    col_op1, col_op2, col_op3 = st.columns([1.5, 1.5, 1])
 
-        if st.form_submit_button("Actualizar Valor 💜"):
-            item_a_editar["valor"] = nuevo_valor_edit
-            st.success("¡Valor actualizado con éxito!")
-            st.rerun()
+    with col_op1:
+        opciones_operarios = ["Seleccione operario..."] + operarios
+        operario = st.selectbox("Operario Responsable", opciones_operarios, key=f"op_sel_{planta}")
 
-with tab_prestamos:
-    st.markdown(
-        "<h4 style='color: #4A148C; font-weight: 800;'>🤝 Entradas Principales de"
-        " Dinero</h4>",
-        unsafe_allow_html=True,
-    )
-    for p in st.session_state.prestamos_por_cobrar:
-        st.markdown(
-            f"<div"
-            f" class='kiut-card-grid'><b>{p['deudor']}</b>:"
-            f" <b>{formato_COP(p['valor'])}</b> ({p['fecha_pago']})</div>",
-            unsafe_allow_html=True,
-        )
-
-with tab_extras:
-    col_ex1, col_ex2 = st.columns(2)
-    with col_ex1:
-        with st.form(key="form_imprevisto_main_central"):
-            nombre_imp_m = st.text_input("Concepto Gasto Hormiga / Imprevisto")
-            valor_imp_m = st.number_input(
-                "Valor (COP)", min_value=0.0, step=10000.0
-            )
-            if (
-                st.form_submit_button("Registrar Imprevisto")
-                and nombre_imp_m
-                and valor_imp_m > 0
-            ):
-                st.session_state.imprevistos_por_periodo[
-                    clave_periodo_actual
-                ].append({"nombre": nombre_imp_m, "valor": valor_imp_m})
-                st.success("¡Registrado!")
+    with col_op2:
+        nuevo_operario = st.text_input("Registrar Nuevo Operario", placeholder="Nombre y Apellido", key=f"nuevo_op_{planta}")
+        if st.button("Registrar Operario", key=f"btn_save_op_{planta}", use_container_width=True, type="primary"):
+            nombre = nuevo_operario.strip()
+            if not nombre:
+                st.warning("Ingrese el nombre del operario.")
+            elif nombre in operarios:
+                st.info("El operario ya se encuentra registrado.")
+            else:
+                operarios.append(nombre)
+                guardar_operarios(planta, operarios)
+                st.success("Operario registrado con éxito.")
                 st.rerun()
-    with col_ex2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("📥 Descargar Base en CSV"):
-            df_export = pd.DataFrame(st.session_state.obligaciones_base)
-            csv_data = df_export.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "Confirmar Descarga",
-                data=csv_data,
-                file_name="Finanzas_Tatis_Pro_Definitiva.csv",
-                mime="text/csv",
-            )
+
+    with col_op3:
+        fecha_registro = st.date_input("Fecha de Registro", value=obtener_fecha_bogota(), key=f"fec_{planta}")
+
+    col_op4, col_op5, col_op6 = st.columns(3)
+
+    with col_op4:
+        orden = st.text_input("Orden de Producción (OP)", placeholder="Ej. OP-2026-001", key=f"ord_{planta}")
+    with col_op5:
+        turno = st.selectbox("Turno de Trabajo", ["Turno 1 (Mañana)", "Turno 2 (Tarde)", "Turno 3 (Noche)", "Mixto"], key=f"tur_{planta}")
+    with col_op6:
+        maquina = st.selectbox("Máquina / Estación", config["maquinas"], key=f"maq_{planta}")
+
+    col_prod1, col_prod2 = st.columns(2)
+    with col_prod1:
+        proyecto = st.text_input("Proyecto / Referencia General", placeholder="Ej. Estantería Metálica Módulo A", key=f"proy_{planta}")
+    with col_prod2:
+        detalle_pieza = st.text_input("Especificación de Pieza / Sub-Ensamblaje", placeholder="Ej. Lateral Derecho Perforado", key=f"det_{planta}")
+
+    col_mat1, col_mat2, col_mat3 = st.columns(3)
+    with col_mat1:
+        material = st.selectbox("Material Insumo", config["materiales"], key=f"mat_{planta}")
+    with col_mat2:
+        calibre = st.selectbox("Espesor / Calibre", config["calibres"], key=f"cal_{planta}")
+    with col_mat3:
+        calibre_personalizado = ""
+        if calibre == "OTRO / LIBRE (Escribir en vivo)":
+            calibre_personalizado = st.text_input("Especificar Calibre Manual", placeholder="Valor exacto", key=f"cal_lib_{planta}")
+
+    calibre_final = calibre_personalizado.strip() if calibre == "OTRO / LIBRE (Escribir en vivo)" else calibre
+
+    col_cant1, col_cant2, col_cant3 = st.columns(3)
+    with col_cant1:
+        cantidad_lote = st.number_input("Cantidad Total Lote", min_value=1, value=1, step=1, key=f"cant_lote_{planta}")
+    with col_cant2:
+        piezas_ok = st.number_input("Piezas Conformes (OK)", min_value=0, value=1, step=1, key=f"p_ok_{planta}")
+    with col_cant3:
+        tiempo_estandar = st.number_input("Tiempo Estándar Unitario (min)", min_value=0.0, value=0.0, step=0.1, format="%.2f", key=f"t_std_{planta}")
+
+    st.markdown('<div class="section-title-eng">2. Cronómetros Múltiples (Funcionamiento Simultáneo e Independiente)</div>', unsafe_allow_html=True)
+    st.caption("Puede iniciar varios cronómetros a la vez (por ejemplo, registrar paros en paralelo o solapamiento de tiempos) o gestionarlos de forma independiente.")
+
+    claves_cronometros = list(CRONOMETROS.keys())
+
+    for inicio_fila in range(0, len(claves_cronometros), 2):
+        columnas = st.columns(2)
+        for idx_col, col_actual in enumerate(columnas):
+            pos = inicio_fila + idx_col
+            if pos >= len(claves_cronometros):
+                continue
+            clave = claves_cronometros[pos]
+            datos = CRONOMETROS[clave]
+            activo = st.session_state.get(f"{clave}_inicio") is not None
+            duracion = segundos_cronometro(clave)
+
+            card_cls = "timer-card-eng-active" if activo else "timer-card-eng"
+            status_cls = "timer-status-active" if activo else "timer-status-idle"
+            status_txt = "EN EJECUCIÓN" if activo else "DETENIDO"
+
+            with col_actual:
+                st.markdown(
+                    f"""
+                    <div class="{card_cls}">
+                        <div class="timer-header-row">
+                            <span class="timer-name-eng">{datos['nombre']}</span>
+                            <span class="{status_cls}">[{status_txt}]</span>
+                        </div>
+                        <div class="timer-digits-eng">{formatear_duracion(duracion)}</div>
+                        <div class="timer-desc-eng">{datos['descripcion']}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                b_col1, b_col2 = st.columns(2)
+                with b_col1:
+                    if not activo:
+                        if st.button("Iniciar", key=f"iniciar_{clave}_{planta}", use_container_width=True, type="primary"):
+                            iniciar_cronometro(clave)
+                            st.rerun()
+                    else:
+                        if st.button("Pausar", key=f"pausar_{clave}_{planta}", use_container_width=True):
+                            pausar_cronometro(clave)
+                            st.rerun()
+                with b_col2:
+                    if st.button("Reiniciar", key=f"reset_{clave}_{planta}", use_container_width=True):
+                        pausar_cronometro(clave)
+                        st.session_state[f"{clave}_acumulado"] = 0.0
+                        st.rerun()
+
+    if cronometros_activos_count() > 0:
+        time.sleep(1)
+        st.rerun()
+
+    st.markdown('<div class="section-title-eng">3. Motivo de Paro o Detención Operativa</div>', unsafe_allow_html=True)
+    motivo_paro = st.selectbox("Seleccione Motivo Principal de Paro", ["No aplica / Operación Continua"] + config["motivos_paro"], key=f"mot_{planta}")
+
+    st.markdown('<div class="section-title-eng">4. Consolidado y Analítica de Tiempos del Registro</div>', unsafe_allow_html=True)
+
+    tiempos_seg = {clv: segundos_cronometro(clv) for clv in CRONOMETROS}
+    setup_min = minutos_desde_segundos(tiempos_seg["setup"])
+    ciclo_min = minutos_desde_segundos(tiempos_seg["ciclo"])
+    descargue_min = minutos_desde_segundos(tiempos_seg["descargue"])
+    paros_min = minutos_desde_segundos(tiempos_seg["paros"])
+    espera_min = minutos_desde_segundos(tiempos_seg["espera"])
+
+    tiempo_total_min = round(setup_min + ciclo_min + descargue_min + paros_min + espera_min, 2)
+    tiempo_productivo_min = ciclo_min
+    tiempo_improductivo_min = round(paros_min + espera_min, 2)
+
+    cm1, cm2, cm3, cm4 = st.columns(4)
+    with cm1:
+        st.markdown(f"""
+            <div class="metric-card-eng">
+                <div class="metric-label-eng">Tiempo Total</div>
+                <div class="metric-value-eng">{tiempo_total_min:.2f} min</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with cm2:
+        st.markdown(f"""
+            <div class="metric-card-eng">
+                <div class="metric-label-eng">Ciclo Productivo</div>
+                <div class="metric-value-eng">{tiempo_productivo_min:.2f} min</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with cm3:
+        st.markdown(f"""
+            <div class="metric-card-eng">
+                <div class="metric-label-eng">Tiempos Improductivos</div>
+                <div class="metric-value-eng">{tiempo_improductivo_min:.2f} min</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with cm4:
+        eficiencia_parcial = (tiempo_productivo_min / tiempo_total_min * 100) if tiempo_total_min > 0 else 0.0
+        st.markdown(f"""
+            <div class="metric-card-eng">
+                <div class="metric-label-eng">Eficiencia de Ciclo</div>
+                <div class="metric-value-eng">{eficiencia_parcial:.1f}%</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    col_btn_save, col_btn_clear = st.columns([2, 1])
+    with col_btn_save:
+        guardar_btn = st.button("Guardar Registro en Base de Datos", type="primary", use_container_width=True, key=f"save_db_{planta}")
+    with col_btn_clear:
+        limpiar_btn = st.button("Reiniciar Todo", use_container_width=True, key=f"clear_all_{planta}")
+
+    if limpiar_btn:
+        reiniciar_cronometros()
+        st.rerun()
+
+    if guardar_btn:
+        errores = []
+        if operario == "Seleccione operario...":
+            errores.append("Debe seleccionar un operario responsable.")
+        if not orden.strip():
+            errores.append("El campo Orden de Producción (OP) es obligatorio.")
+        if not proyecto.strip():
+            errores.append("El campo Proyecto / Referencia es obligatorio.")
+        if not detalle_pieza.strip():
+            errores.append("El detalle de la pieza es obligatorio.")
+        if calibre == "OTRO / LIBRE (Escribir en vivo)" and not calibre_final:
+            errores.append("Debe especificar el calibre de forma manual.")
+        if piezas_ok > cantidad_lote:
+            errores.append("Las piezas OK no pueden ser mayores a la cantidad del lote.")
+        if tiempo_total_min <= 0:
+            errores.append("Debe registrar al menos un tiempo operativo antes de guardar.")
+
+        if errores:
+            for err in errores:
+                st.error(err)
+        else:
+            hora_ini = st.session_state.get("hora_inicio_registro") or obtener_hora_bogota()
+            hora_fin = obtener_hora_bogota()
+            motivo_final = "" if motivo_paro == "No aplica / Operación Continua" else motivo_paro
+
+            registro_data = {
+                "Planta": planta,
+                "Operario": operario,
+                "Orden": orden.strip(),
+                "Fecha": fecha_registro.strftime("%Y-%m-%d"),
+                "Turno": turno,
+                "Máquina": maquina,
+                "Proyecto": proyecto.strip(),
+                "Detalle Pieza": detalle_pieza.strip(),
+                "Material": material,
+                "Espesor/Calibre": calibre_final,
+                "Cantidad Lote": int(cantidad_lote),
+                "Piezas OK": int(piezas_ok),
+                "Setup (min)": setup_min,
+                "Tiempo Estándar (min)": float(tiempo_estandar),
+                "Ciclo Real (min)": ciclo_min,
+                "Espera Operario (min)": espera_min,
+                "Paro Máquina (min)": paros_min,
+                "Descargue (min)": descargue_min,
+                "Motivo Paro": motivo_final,
+                "Hora Inicio": hora_ini,
+                "Hora Fin": hora_fin
+            }
+
+            try:
+                guardar_registro(planta, registro_data)
+                st.success(f"Registro almacenado con éxito en {ARCHIVOS_EXCEL[planta]}.")
+                reiniciar_cronometros()
+                st.rerun()
+            except Exception as ex:
+                st.error(f"Error al guardar los datos: {ex}")
+
+# ============================================================
+# 11. PESTAÑA 2: HISTORIAL Y ANALÍTICA
+# ============================================================
+
+with tab_historial:
+    st.markdown('<div class="section-title-eng">Historial y Consultas de Producción</div>', unsafe_allow_html=True)
+    st.caption(f"Fuente de datos activa: {ARCHIVOS_EXCEL[planta]}")
+
+    df_hist = leer_historial(planta)
+
+    if df_hist is not None:
+        if df_hist.empty:
+            st.info("No se registran datos previos almacenados para esta planta.")
+        else:
+            cf1, cf2, cf3 = st.columns(3)
+            with cf1:
+                ops_list = sorted(df_hist["Operario"].dropna().astype(str).unique().tolist())
+                filtro_op = st.selectbox("Filtrar por Operario", ["Todos"] + ops_list, key=f"f_op_{planta}")
+            with cf2:
+                maqs_list = sorted(df_hist["Máquina"].dropna().astype(str).unique().tolist())
+                filtro_mq = st.selectbox("Filtrar por Máquina", ["Todas"] + maqs_list, key=f"f_mq_{planta}")
+            with cf3:
+                filtro_txt = st.text_input("Búsqueda por Orden (OP)", placeholder="Ingrese OP...", key=f"f_txt_{planta}")
+
+            df_view = df_hist.copy()
+            if filtro_op != "Todos":
+                df_view = df_view[df_view["Operario"].astype(str) == filtro_op]
+            if filtro_mq != "Todas":
+                df_view = df_view[df_view["Máquina"].astype(str) == filtro_mq]
+            if filtro_txt.strip():
+                df_view = df_view[df_view["Orden"].astype(str).str.contains(filtro_txt.strip(), case=False, na=False)]
+
+            tot_regs = len(df_view)
+            tot_ciclo_val = pd.to_numeric(df_view["Ciclo Real (min)"], errors="coerce").fillna(0).sum()
+            tot_paros_val = pd.to_numeric(df_view["Paro Máquina (min)"], errors="coerce").fillna(0).sum()
+
+            ch1, ch2, ch3 = st.columns(3)
+            ch1.metric("Registros Filtrados", tot_regs)
+            ch2.metric("Suma Ciclo Real", f"{tot_ciclo_val:.2f} min")
+            ch3.metric("Suma Paros de Máquina", f"{tot_paros_val:.2f} min")
+
+            st.dataframe(df_view, use_container_width=True, hide_index=True)
+            st.info("Nota: La exportación y descarga masiva de datos está restringida al panel de Administración protegido por PIN.")
+
+# ============================================================
+# 12. PESTAÑA 3: ADMINISTRACIÓN Y SEGURIDAD
+# ============================================================
+
+with tab_admin:
+    st.markdown('<div class="section-title-eng">Panel de Administración de Base de Datos</div>', unsafe_allow_html=True)
+    st.warning("Acceso restringido para supervisores y analistas de costos.")
+
+    pin_code = st.text_input("Ingrese PIN de Seguridad Autorizado", type="password", key=f"pin_adm_{planta}")
+
+    if pin_code == PIN_EXPORTACION:
+        st.success("Acceso autorizado con éxito.")
+        if os.path.exists(ARCHIVOS_EXCEL[planta]):
+            with open(ARCHIVOS_EXCEL[planta], "rb") as bin_file:
+                st.download_button(
+                    label=f"Descargar Base de Datos Completa ({planta})",
+                    data=bin_file,
+                    file_name=ARCHIVOS_EXCEL[planta],
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    type="primary"
+                )
+
+            if st.button("Eliminar / Reiniciar Historial de Planta", type="secondary", use_container_width=True):
+                try:
+                    os.remove(ARCHIVOS_EXCEL[planta])
+                    st.success("Base de datos reiniciada correctamente.")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"No se pudo eliminar el archivo: {exc}")
+        else:
+            st.info("No existe un archivo físico de base de datos para esta planta.")
+    elif pin_code != "":
+        st.error("PIN incorrecto.")
