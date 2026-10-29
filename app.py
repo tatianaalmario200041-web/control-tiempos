@@ -282,7 +282,7 @@ def guardar_operarios(planta, operarios):
         json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
 # ============================================================
-# 6. GESTIÓN DE GOOGLE SHEETS (CON CACHÉ AMPLIADA Y ANTI-429)
+# 6. GESTIÓN DE GOOGLE SHEETS (OPTIMIZADO PARA MÚLTIPLES PESTAÑAS)
 # ============================================================
 
 def conectar_gsheets():
@@ -301,7 +301,7 @@ def conectar_gsheets():
     spreadsheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
     return client.open_by_url(spreadsheet_url)
 
-@st.cache_data(ttl=300, show_spinner=False)  # 5 minutos de caché para evitar cuotas agotadas (Error 429)
+@st.cache_data(ttl=300, show_spinner=False)
 def leer_historial_cached(planta):
     try:
         sh = conectar_gsheets()
@@ -320,23 +320,26 @@ def leer_historial_cached(planta):
 def leer_historial(planta):
     res = leer_historial_cached(planta)
     if isinstance(res, str) and res.startswith("ERROR"):
-        # Si Google bloquea temporalmente por cuota (429), devolvemos DataFrame vacío sin romper la app
         if "429" in res or "RESOURCE_EXHAUSTED" in res:
-            st.warning("⚠️ Límite temporal de Google Sheets alcanzando. Usando modo seguro en pausa (tus datos locales están a salvo).")
+            st.warning("⚠️ Límite temporal de Google alcanzado. Usando respaldo local seguro.")
         else:
             st.error(f"Error al sincronizar historial ({planta}): {res.replace('ERROR: ', '')}")
         return pd.DataFrame(columns=COLUMNAS_REGISTRO)
     return res
 
 def guardar_registro(planta, registro):
+    """Inserta el registro directamente al final de la hoja sin forzar lecturas masivas pesadas."""
     try:
         sh = conectar_gsheets()
         worksheet = sh.worksheet(planta)
-        df_existente = leer_historial(planta)
-        nuevo = pd.DataFrame([registro], columns=COLUMNAS_REGISTRO)
-        resultado = pd.concat([df_existente, nuevo], ignore_index=True)
-        worksheet.clear()
-        worksheet.update([resultado.columns.values.tolist()] + resultado.values.tolist())
+        
+        # Convertir el registro en una lista ordenada de valores según COLUMNAS_REGISTRO
+        fila_valores = [registro.get(col, "") for col in COLUMNAS_REGISTRO]
+        
+        # Añadir la fila directamente al final de la hoja en Google Sheets (Súper rápido y sin error 429)
+        worksheet.append_row(fila_valores)
+        
+        # Limpiar caché para que la próxima lectura traiga el registro nuevo
         st.cache_data.clear()
     except Exception as e:
         raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
@@ -358,8 +361,10 @@ def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
     try:
         sh = conectar_gsheets()
         worksheet = sh.worksheet("Borradores_Activos")
-        df_borr = obtener_borradores_cached()
-        if df_borr is not None and not df_borr.empty and "Tab_ID" in df_borr.columns:
+        data = worksheet.get_all_records()
+        df_borr = pd.DataFrame(data) if data else pd.DataFrame(columns=COLUMNAS_BORRADOR)
+        
+        if not df_borr.empty and "Tab_ID" in df_borr.columns:
             df_borr = df_borr[df_borr["Tab_ID"].astype(str) != tab_id]
         else:
             df_borr = pd.DataFrame(columns=COLUMNAS_BORRADOR)
