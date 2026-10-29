@@ -25,7 +25,7 @@ if "tab_id" not in st.session_state:
     st.session_state["tab_id"] = str(uuid.uuid4())[:8]
 
 ARCHIVOS_OPERARIOS = {
-    "Metalmecánica": "Lista_Operarios_Metalmecanica.json",
+    "Metalmecanica": "Lista_Operarios_Metalmecanica.json",
     "Maderas": "Lista_Operarios_Maderas.json"
 }
 
@@ -44,7 +44,7 @@ COLUMNAS_BORRADOR = ["Tab_ID", "Planta", "Operario", "Maquina", "Orden", "Ultima
 # ============================================================
 
 CONFIG_PLANTAS = {
-    "Metalmecánica": {
+    "Metalmecanica": {
         "color_primario": "#0284c7",
         "color_secundario": "#0369a1",
         "bg_badge": "#f0f9ff",
@@ -93,7 +93,7 @@ CONFIG_PLANTAS = {
 }
 
 if "planta_actual" not in st.session_state:
-    st.session_state["planta_actual"] = "Metalmecánica"
+    st.session_state["planta_actual"] = "Metalmecanica"
 
 planta_activa_ini = st.session_state["planta_actual"]
 CFG = CONFIG_PLANTAS[planta_activa_ini]
@@ -281,15 +281,13 @@ def guardar_operarios(planta, operarios):
         json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
 # ============================================================
-# 6. GESTIÓN DE GOOGLE SHEETS (CON CODIFICACIÓN SEGURA UTF-8)
+# 6. GESTIÓN DE GOOGLE SHEETS
 # ============================================================
 
 def leer_historial(planta):
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        # Forzar conversión UTF-8 segura en el nombre de la hoja
-        hoja_segura = str(planta).encode("utf-8").decode("utf-8")
-        df = conn.read(worksheet=hoja_segura, ttl=0)
+        df = conn.read(worksheet=planta, ttl=0)
         if df is None or df.empty:
             return pd.DataFrame(columns=COLUMNAS_REGISTRO)
         for columna in COLUMNAS_REGISTRO:
@@ -303,8 +301,7 @@ def leer_historial(planta):
 def guardar_registro(planta, registro):
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        hoja_segura = str(planta).encode("utf-8").decode("utf-8")
-        df_existente = conn.read(worksheet=hoja_segura, ttl=0)
+        df_existente = conn.read(worksheet=planta, ttl=0)
         if df_existente is None or df_existente.empty:
             df_existente = pd.DataFrame(columns=COLUMNAS_REGISTRO)
         else:
@@ -316,7 +313,7 @@ def guardar_registro(planta, registro):
 
         nuevo = pd.DataFrame([registro], columns=COLUMNAS_REGISTRO)
         resultado = pd.concat([df_existente, nuevo], ignore_index=True)
-        conn.update(worksheet=hoja_segura, data=resultado)
+        conn.update(worksheet=planta, data=resultado)
     except Exception as e:
         raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
 
@@ -334,10 +331,10 @@ def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
 
         nuevo_borr = {
             "Tab_ID": tab_id,
-            "Planta": str(planta),
-            "Operario": str(operario) if operario else "Sin seleccionar",
-            "Maquina": str(maquina),
-            "Orden": str(orden) if orden else "Sin OP",
+            "Planta": planta,
+            "Operario": operario if operario else "Sin seleccionar",
+            "Maquina": maquina,
+            "Orden": orden if orden else "Sin OP",
             "Ultima_Actualizacion": ahora_bogota().strftime("%Y-%m-%d %H:%M:%S"),
             "Estado_Json": json.dumps(estado_dict, ensure_ascii=False)
         }
@@ -390,8 +387,8 @@ with st.sidebar:
     st.markdown("### Configuración de Planta")
     planta = st.radio(
         "Seleccione planta activa",
-        options=["Metalmecánica", "Maderas"],
-        index=0 if st.session_state["planta_actual"] == "Metalmecánica" else 1,
+        options=["Metalmecanica", "Maderas"],
+        index=0 if st.session_state["planta_actual"] == "Metalmecanica" else 1,
         key="selector_planta"
     )
 
@@ -788,11 +785,11 @@ with tab_admin:
         st.markdown("---")
         st.markdown("### Resumen General de Registros en la Nube")
         col_m, col_w = st.columns(2)
-        df_adm_m = leer_historial("Metalmecánica")
+        df_adm_m = leer_historial("Metalmecanica")
         df_adm_w = leer_historial("Maderas")
 
         with col_m:
-            st.metric("Total Registros Finales (Metalmecánica)", len(df_adm_m) if df_adm_m is not None else 0)
+            st.metric("Total Registros Finales (Metalmecanica)", len(df_adm_m) if df_adm_m is not None else 0)
         with col_w:
             st.metric("Total Registros Finales (Maderas)", len(df_adm_w) if df_adm_w is not None else 0)
 
