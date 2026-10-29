@@ -175,7 +175,7 @@ html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; colo
 .timer-card-eng {{ background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; }}
 .timer-card-eng-active {{ background: {BG_TIMER_ACT}; border: 2px solid {BORDER_ACT}; border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; }}
 
-.timer-header-row {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }}
+.timer-header-row {{ display: flex; justifyContent: space-between; align-items: center; margin-bottom: 6px; }}
 .timer-name-eng {{ font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; }}
 .timer-status-idle {{ font-size: 9px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; }}
 .timer-status-active {{ font-size: 9px; font-weight: 800; color: #ffffff; background: {COLOR_PRI}; padding: 2px 8px; border-radius: 4px; }}
@@ -328,7 +328,6 @@ def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
         else:
             df_borr = df_borr.dropna(how="all")
 
-        # Aislar por Tab_ID para permitir múltiples pestañas simultáneas sin conflictos
         df_borr = df_borr[df_borr["Tab_ID"] != tab_id]
 
         nuevo_borr = {
@@ -446,7 +445,6 @@ tab_registro, tab_historial, tab_admin = st.tabs([
 with tab_registro:
     operarios = cargar_operarios(planta)
 
-    # --- RESTAURACIÓN AUTOMÁTICA SI SE REFRESCÓ LA PÁGINA (F5) ---
     if not st.session_state.get("verificado_recarga"):
         p_borr, d_borr = buscar_borrador_actual()
         if p_borr and d_borr:
@@ -570,7 +568,6 @@ with tab_registro:
                     if not activo:
                         if st.button("Iniciar", key=f"iniciar_{clave}_{planta}", use_container_width=True, type="primary"):
                             iniciar_cronometro(clave)
-                            # Guardado en tiempo real del borrador para blindaje contra F5
                             tiempos_actuales = {c: segundos_cronometro(c) for c in CRONOMETROS}
                             guardar_borrador_en_vivo(planta, operario, maquina, orden, {
                                 "tiempos": tiempos_actuales,
@@ -711,7 +708,7 @@ with tab_registro:
 
             try:
                 guardar_registro(planta, registro_data)
-                eliminar_borrador_actual() # Limpia el borrador al finalizar el registro
+                eliminar_borrador_actual()
                 st.success(f"Registro final guardado con éxito en Google Sheets ({planta}).")
                 reiniciar_cronometros()
                 st.rerun()
