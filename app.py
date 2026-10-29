@@ -282,7 +282,7 @@ def guardar_operarios(planta, operarios):
         json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
 # ============================================================
-# 6. GESTIÓN DE GOOGLE SHEETS (OPTIMIZADO PARA MÚLTIPLES PESTAÑAS)
+# 6. GESTIÓN DE GOOGLE SHEETS
 # ============================================================
 
 def conectar_gsheets():
@@ -320,26 +320,15 @@ def leer_historial_cached(planta):
 def leer_historial(planta):
     res = leer_historial_cached(planta)
     if isinstance(res, str) and res.startswith("ERROR"):
-        if "429" in res or "RESOURCE_EXHAUSTED" in res:
-            st.warning("⚠️ Límite temporal de Google alcanzado. Usando respaldo local seguro.")
-        else:
-            st.error(f"Error al sincronizar historial ({planta}): {res.replace('ERROR: ', '')}")
         return pd.DataFrame(columns=COLUMNAS_REGISTRO)
     return res
 
 def guardar_registro(planta, registro):
-    """Inserta el registro directamente al final de la hoja sin forzar lecturas masivas pesadas."""
     try:
         sh = conectar_gsheets()
         worksheet = sh.worksheet(planta)
-        
-        # Convertir el registro en una lista ordenada de valores según COLUMNAS_REGISTRO
         fila_valores = [registro.get(col, "") for col in COLUMNAS_REGISTRO]
-        
-        # Añadir la fila directamente al final de la hoja en Google Sheets (Súper rápido y sin error 429)
         worksheet.append_row(fila_valores)
-        
-        # Limpiar caché para que la próxima lectura traiga el registro nuevo
         st.cache_data.clear()
     except Exception as e:
         raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
@@ -348,7 +337,7 @@ def guardar_registro(planta, registro):
 def obtener_borradores_cached():
     try:
         sh = conectar_gsheets()
-        worksheet = sh.worksheet("Borradores_Activos")
+        worksheet = sh.worksheet("Borradores_Auditoria")
         data = worksheet.get_all_records()
         if data:
             return pd.DataFrame(data)
@@ -360,7 +349,12 @@ def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
     tab_id = st.session_state["tab_id"]
     try:
         sh = conectar_gsheets()
-        worksheet = sh.worksheet("Borradores_Activos")
+        try:
+            worksheet = sh.worksheet("Borradores_Auditoria")
+        except Exception:
+            worksheet = sh.add_worksheet(title="Borradores_Auditoria", rows=100, cols=10)
+            worksheet.append_row(COLUMNAS_BORRADOR)
+
         data = worksheet.get_all_records()
         df_borr = pd.DataFrame(data) if data else pd.DataFrame(columns=COLUMNAS_BORRADOR)
         
@@ -403,7 +397,7 @@ def eliminar_borrador_actual():
     tab_id = st.session_state["tab_id"]
     try:
         sh = conectar_gsheets()
-        worksheet = sh.worksheet("Borradores_Activos")
+        worksheet = sh.worksheet("Borradores_Auditoria")
         df_borr = obtener_borradores_cached()
         if df_borr is not None and not df_borr.empty and "Tab_ID" in df_borr.columns:
             df_borr = df_borr[df_borr["Tab_ID"].astype(str) != tab_id]
@@ -475,7 +469,7 @@ tab_registro, tab_historial, tab_admin = st.tabs([
 ])
 
 # ============================================================
-# 10. PESTAÑA 1: REGISTRO CON RECUPERACIÓN AUTOMÁTICA DE DATOS
+# 10. PESTAÑA 1: REGISTRO CON TABLA VISUAL DE RESCATE ORGANIZADA
 # ============================================================
 
 with tab_registro:
@@ -489,10 +483,24 @@ with tab_registro:
 
     if st.session_state.get("borrador_pendiente"):
         p_pen, d_pen = st.session_state["borrador_pendiente"]
-        st.warning(f"⚠️ Se detectó una toma activa previa no guardada en esta pestaña (Planta: {p_pen} | Operario: {d_pen.get('operario')} | OP: {d_pen.get('orden')}). ¿Deseas recuperarla y continuar?")
-        c_r1, c_r2 = st.columns(2)
+        st.warning("🚨 Se detectó una toma previa sin guardar en esta estación. Aquí tienes la tabla organizada con el resumen de la última toma realizada:")
+        
+        # Tabla visual organizada y limpia del borrador pendiente
+        df_resumen_rescate = pd.DataFrame([{
+            "Planta": p_pen,
+            "Operario": d_pen.get('operario'),
+            "Orden (OP)": d_pen.get('orden'),
+            "Máquina": d_pen.get('maquina'),
+            "Proyecto": d_pen.get('proyecto'),
+            "Setup (min)": round(d_pen.get("tiempos", {}).get("setup", 0.0) / 60, 2),
+            "Ciclo (min)": round(d_pen.get("tiempos", {}).get("ciclo", 0.0) / 60, 2),
+            "Última Actualización": d_pen.get('hora_inicio', 'N/A')
+        }])
+        st.dataframe(df_resumen_rescate, use_container_width=True, hide_index=True)
+
+        c_r1, c_r2, c_r3 = st.columns(3)
         with c_r1:
-            if st.button("🔄 Sí, Recuperar Datos Previos", type="primary", use_container_width=True):
+            if st.button("🔄 Recuperar en pantalla para editar", type="primary", use_container_width=True):
                 for clv in CRONOMETROS:
                     st.session_state[f"{clv}_acumulado"] = float(d_pen.get("tiempos", {}).get(clv, 0.0))
                 st.session_state["hora_inicio_registro"] = d_pen.get("hora_inicio")
@@ -500,7 +508,40 @@ with tab_registro:
                 st.success("¡Datos recuperados con éxito!")
                 st.rerun()
         with c_r2:
-            if st.button("🗑️ No, Descartar e Iniciar Nueva", use_container_width=True):
+            if st.button("💾 ¡Salvar y Enviar a Base de Datos Ya!", use_container_width=True):
+                try:
+                    reg_rescate = {
+                        "Planta": p_pen,
+                        "Operario": d_pen.get("operario", "Desconocido"),
+                        "Orden": d_pen.get("orden", "SIN-OP"),
+                        "Fecha": obtener_fecha_bogota().strftime("%Y-%m-%d"),
+                        "Turno": "Turno 1 (Mañana)",
+                        "Máquina": d_pen.get("maquina", "Máquina General"),
+                        "Proyecto": d_pen.get("proyecto", "Proyecto Rescatado"),
+                        "Detalle Pieza": "Rescate automático estructurado",
+                        "Material": "Estándar",
+                        "Espesor/Calibre": "Estándar",
+                        "Cantidad Lote": 1,
+                        "Piezas OK": 1,
+                        "Setup (min)": round(d_pen.get("tiempos", {}).get("setup", 0.0) / 60, 2),
+                        "Tiempo Estándar (min)": 0.0,
+                        "Ciclo Real (min)": round(d_pen.get("tiempos", {}).get("ciclo", 0.0) / 60, 2),
+                        "Espera Operario (min)": round(d_pen.get("tiempos", {}).get("espera", 0.0) / 60, 2),
+                        "Paro Máquina (min)": round(d_pen.get("tiempos", {}).get("paros", 0.0) / 60, 2),
+                        "Descargue (min)": round(d_pen.get("tiempos", {}).get("descargue", 0.0) / 60, 2),
+                        "Motivo Paro": "",
+                        "Hora Inicio": d_pen.get("hora_inicio", obtener_hora_bogota()),
+                        "Hora Fin": obtener_hora_bogota()
+                    }
+                    guardar_registro(p_pen, reg_rescate)
+                    eliminar_borrador_actual()
+                    st.session_state["borrador_pendiente"] = None
+                    st.success("¡Toma salvada y enviada formalmente a Google Sheets!")
+                    st.rerun()
+                except Exception as ex:
+                    st.error(f"Error al salvar: {ex}")
+        with c_r3:
+            if st.button("🗑️ Descartar borrador", use_container_width=True):
                 eliminar_borrador_actual()
                 st.session_state["borrador_pendiente"] = None
                 st.rerun()
@@ -609,7 +650,9 @@ with tab_registro:
                                 "tiempos": tiempos_actuales,
                                 "hora_inicio": st.session_state.get("hora_inicio_registro"),
                                 "orden": orden,
-                                "operario": operario
+                                "operario": operario,
+                                "maquina": maquina,
+                                "proyecto": proyecto
                             })
                             st.rerun()
                     else:
@@ -620,7 +663,9 @@ with tab_registro:
                                 "tiempos": tiempos_actuales,
                                 "hora_inicio": st.session_state.get("hora_inicio_registro"),
                                 "orden": orden,
-                                "operario": operario
+                                "operario": operario,
+                                "maquina": maquina,
+                                "proyecto": proyecto
                             })
                             st.rerun()
                 with b_col2:
@@ -815,9 +860,9 @@ with tab_admin:
             df_mostrar_activos = df_activos[["Planta", "Operario", "Maquina", "Orden", "Ultima_Actualizacion"]].copy()
             df_mostrar_activos.columns = ["Planta", "Operario Activo", "Máquina / Estación", "Orden (OP)", "Última Actividad"]
             st.dataframe(df_mostrar_activos, use_container_width=True, hide_index=True)
-            st.caption("ℹ️ Aquí puedes ver exactamente qué operarios tienen pestañas abiertas tomando tiempos o con registros en curso en este preciso instante.")
+            st.caption("ℹ️ Aquí puedes ver qué operarios tienen tomas en curso o pendientes de cierre.")
         else:
-            st.info("No hay estaciones con toma de tiempos activa en este momento.")
+            st.info("No hay estaciones con tomas de tiempos activas en este momento.")
 
         st.markdown("---")
         st.markdown("### Resumen General de Registros en la Nube")
