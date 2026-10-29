@@ -337,7 +337,7 @@ def guardar_registro(planta, registro):
     except Exception as e:
         raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
 
-@st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(ttl=30, show_spinner=False)
 def obtener_borradores_cached():
     try:
         sh = conectar_gsheets()
@@ -393,30 +393,19 @@ def guardar_borrador_en_vivo(planta, operario, maquina, orden, proyecto, tiempos
     except Exception as e:
         pass
 
-def buscar_borrador_actual():
-    tab_id = st.session_state["tab_id"]
-    try:
-        df_borr = obtener_borradores_cached()
-        if df_borr is not None and not df_borr.empty and "Tab_ID" in df_borr.columns:
-            df_m = df_borr[df_borr["Tab_ID"].astype(str) == tab_id]
-            if not df_m.empty:
-                return df_m.iloc[-1].to_dict()
-    except Exception:
-        pass
-    return None
-
-def eliminar_borrador_actual():
-    tab_id = st.session_state["tab_id"]
+def eliminar_borrador_por_id(tab_id_a_borrar):
     try:
         sh = conectar_gsheets()
         worksheet = sh.worksheet("Borradores_Auditoria")
-        df_borr = obtener_borradores_cached()
-        if df_borr is not None and not df_borr.empty and "Tab_ID" in df_borr.columns:
-            df_borr = df_borr[df_borr["Tab_ID"].astype(str) != tab_id]
-            worksheet.clear()
-            worksheet.update([df_borr.columns.values.tolist()] + df_borr.values.tolist())
-            st.cache_data.clear()
-    except Exception:
+        data = worksheet.get_all_records()
+        if data:
+            df_borr = pd.DataFrame(data)
+            if not df_borr.empty and "Tab_ID" in df_borr.columns:
+                df_borr = df_borr[df_borr["Tab_ID"].astype(str) != str(tab_id_a_borrar)]
+                worksheet.clear()
+                worksheet.update([df_borr.columns.values.tolist()] + df_borr.values.tolist())
+                st.cache_data.clear()
+    except Exception as e:
         pass
 
 def obtener_borradores_activos_global():
@@ -481,75 +470,86 @@ tab_registro, tab_historial, tab_admin = st.tabs([
 ])
 
 # ============================================================
-# 10. PESTAÑA 1: REGISTRO CON RESCATE LIMPIO Y ORGANIZADO
+# 10. PESTAÑA 1: REGISTRO CON SELECTOR DE BORRADORES
 # ============================================================
 
 with tab_registro:
     operarios = cargar_operarios(planta)
 
-    if not st.session_state.get("verificado_recarga"):
-        d_borr = buscar_borrador_actual()
-        if d_borr:
-            st.session_state["borrador_pendiente"] = d_borr
-        st.session_state["verificado_recarga"] = True
+    # BOTÓN / SECCIÓN DE SALVADO Y RECUPERACIÓN DE BORRADORES
+    with st.expander("📂 Cargar y continuar un borrador pendiente (Salvar tomas anteriores)", expanded=False):
+        df_todos_borradores = obtener_borradores_cached()
+        if df_todos_borradores is not None and not df_todos_borradores.empty:
+            # Filtrar borradores de la planta actual
+            df_planta_borr = df_todos_borradores[df_todos_borradores["Planta"].astype(str) == planta]
+            
+            if not df_planta_borr.empty:
+                st.info(f"Se encontraron {len(df_planta_borr)} borrador(es) pendientes en {planta}.")
+                
+                # Crear opciones descriptivas para el selector
+                opciones_borr = []
+                mapa_borr = {}
+                for idx, row in df_planta_borr.iterrows():
+                    etiqueta = f"OP: {row['Orden']} | Operario: {row['Operario']} | Máquina: {row['Máquina']} ({row['Última Actualización']})"
+                    opciones_borr.append(etiqueta)
+                    mapa_borr[etiqueta] = row
 
-    if st.session_state.get("borrador_pendiente"):
-        d_pen = st.session_state["borrador_pendiente"]
-        st.warning("🚨 Se detectó una toma previa sin guardar en esta estación. Aquí tienes la tabla estructurada con el detalle organizado:")
-        
-        # Mostrar tabla organizada con columnas limpias
-        df_resumen_rescate = pd.DataFrame([d_pen])
-        st.dataframe(df_resumen_rescate, use_container_width=True, hide_index=True)
-
-        c_r1, c_r2, c_r3 = st.columns(3)
-        with c_r1:
-            if st.button("🔄 Recuperar en pantalla para editar", type="primary", use_container_width=True):
-                st.session_state["setup_acumulado"] = float(d_pen.get("Setup (min)", 0.0)) * 60
-                st.session_state["ciclo_acumulado"] = float(d_pen.get("Ciclo Real (min)", 0.0)) * 60
-                st.session_state["descargue_acumulado"] = float(d_pen.get("Descargue (min)", 0.0)) * 60
-                st.session_state["paros_acumulado"] = float(d_pen.get("Paro Máquina (min)", 0.0)) * 60
-                st.session_state["espera_acumulado"] = float(d_pen.get("Espera Operario (min)", 0.0)) * 60
-                st.session_state["borrador_pendiente"] = None
-                st.success("¡Datos recuperados con éxito!")
-                st.rerun()
-        with c_r2:
-            if st.button("💾 ¡Salvar y Enviar a Base de Datos Ya!", use_container_width=True):
-                try:
-                    reg_rescate = {
-                        "Planta": d_pen.get("Planta", planta),
-                        "Operario": d_pen.get("Operario", "Desconocido"),
-                        "Orden": d_pen.get("Orden", "SIN-OP"),
-                        "Fecha": obtener_fecha_bogota().strftime("%Y-%m-%d"),
-                        "Turno": "Turno 1 (Mañana)",
-                        "Máquina": d_pen.get("Máquina", "Máquina General"),
-                        "Proyecto": d_pen.get("Proyecto", "Proyecto Rescatado"),
-                        "Detalle Pieza": "Rescate estructurado",
-                        "Material": "Estándar",
-                        "Espesor/Calibre": "Estándar",
-                        "Cantidad Lote": 1,
-                        "Piezas OK": 1,
-                        "Setup (min)": float(d_pen.get("Setup (min)", 0.0)),
-                        "Tiempo Estándar (min)": 0.0,
-                        "Ciclo Real (min)": float(d_pen.get("Ciclo Real (min)", 0.0)),
-                        "Espera Operario (min)": float(d_pen.get("Espera Operario (min)", 0.0)),
-                        "Paro Máquina (min)": float(d_pen.get("Paro Máquina (min)", 0.0)),
-                        "Descargue (min)": float(d_pen.get("Descargue (min)", 0.0)),
-                        "Motivo Paro": "",
-                        "Hora Inicio": obtener_hora_bogota(),
-                        "Hora Fin": obtener_hora_bogota()
-                    }
-                    guardar_registro(d_pen.get("Planta", planta), reg_rescate)
-                    eliminar_borrador_actual()
-                    st.session_state["borrador_pendiente"] = None
-                    st.success("¡Toma salvada y enviada a Google Sheets de forma ordenada!")
-                    st.rerun()
-                except Exception as ex:
-                    st.error(f"Error al salvar: {ex}")
-        with c_r3:
-            if st.button("🗑️ Descartar borrador", use_container_width=True):
-                eliminar_borrador_actual()
-                st.session_state["borrador_pendiente"] = None
-                st.rerun()
+                borrador_seleccionado = st.selectbox("Seleccione el borrador que desea retomar o salvar:", opciones_borr, key=f"sel_borr_{planta}")
+                
+                b_col_rec, b_col_salv, b_col_del = st.columns(3)
+                with b_col_rec:
+                    if st.button("🔄 Cargar para continuar", type="primary", use_container_width=True):
+                        datos_b = mapa_borr[borrador_seleccionado]
+                        st.session_state["setup_acumulado"] = float(datos_b.get("Setup (min)", 0.0)) * 60
+                        st.session_state["ciclo_acumulado"] = float(datos_b.get("Ciclo Real (min)", 0.0)) * 60
+                        st.session_state["descargue_acumulado"] = float(datos_b.get("Descargue (min)", 0.0)) * 60
+                        st.session_state["paros_acumulado"] = float(datos_b.get("Paro Máquina (min)", 0.0)) * 60
+                        st.session_state["espera_acumulado"] = float(datos_b.get("Espera Operario (min)", 0.0)) * 60
+                        st.success("¡Borrador cargado con éxito en los cronómetros!")
+                        st.rerun()
+                with b_col_salv:
+                    if st.button("💾 Salvar y enviar definitivo", use_container_width=True):
+                        datos_b = mapa_borr[borrador_seleccionado]
+                        try:
+                            reg_rescate = {
+                                "Planta": planta,
+                                "Operario": datos_b.get("Operario", "Desconocido"),
+                                "Orden": datos_b.get("Orden", "SIN-OP"),
+                                "Fecha": obtener_fecha_bogota().strftime("%Y-%m-%d"),
+                                "Turno": "Turno 1 (Mañana)",
+                                "Máquina": datos_b.get("Máquina", "Máquina General"),
+                                "Proyecto": datos_b.get("Proyecto", "Proyecto Rescatado"),
+                                "Detalle Pieza": "Rescate desde selector",
+                                "Material": "Estándar",
+                                "Espesor/Calibre": "Estándar",
+                                "Cantidad Lote": 1,
+                                "Piezas OK": 1,
+                                "Setup (min)": float(datos_b.get("Setup (min)", 0.0)),
+                                "Tiempo Estándar (min)": 0.0,
+                                "Ciclo Real (min)": float(datos_b.get("Ciclo Real (min)", 0.0)),
+                                "Espera Operario (min)": float(datos_b.get("Espera Operario (min)", 0.0)),
+                                "Paro Máquina (min)": float(datos_b.get("Paro Máquina (min)", 0.0)),
+                                "Descargue (min)": float(datos_b.get("Descargue (min)", 0.0)),
+                                "Motivo Paro": "",
+                                "Hora Inicio": obtener_hora_bogota(),
+                                "Hora Fin": obtener_hora_bogota()
+                            }
+                            guardar_registro(planta, reg_rescate)
+                            eliminar_borrador_por_id(datos_b.get("Tab_ID"))
+                            st.success("¡Borrador salvado y enviado formalmente a Google Sheets!")
+                            st.rerun()
+                        except Exception as ex:
+                            st.error(f"Error al salvar: {ex}")
+                with b_col_del:
+                    if st.button("🗑️ Descartar borrador", use_container_width=True):
+                        datos_b = mapa_borr[borrador_seleccionado]
+                        eliminar_borrador_por_id(datos_b.get("Tab_ID"))
+                        st.success("Borrador eliminado correctamente.")
+                        st.rerun()
+            else:
+                st.info("No hay borradores pendientes para esta planta en este momento.")
+        else:
+            st.info("No hay borradores guardados en la nube.")
 
     st.markdown('<div class="section-title-eng">1. Datos Generales de la Orden de Producción</div>', unsafe_allow_html=True)
 
@@ -726,7 +726,6 @@ with tab_registro:
 
     if limpiar_btn:
         reiniciar_cronometros()
-        eliminar_borrador_actual()
         st.rerun()
 
     if guardar_btn:
@@ -780,7 +779,6 @@ with tab_registro:
 
             try:
                 guardar_registro(planta, registro_data)
-                eliminar_borrador_actual()
                 st.success(f"Registro final guardado con éxito en Google Sheets ({planta}).")
                 reiniciar_cronometros()
                 st.rerun()
@@ -849,7 +847,7 @@ with tab_admin:
 
         if not df_activos.empty:
             st.dataframe(df_activos, use_container_width=True, hide_index=True)
-            st.caption("ℹ️ Listado ordenado de los borradores y tomas activas en curso.")
+            st.caption("ℹ️ Listado ordenado y limpio de todos los borradores almacenados en la nube.")
         else:
             st.info("No hay estaciones con tomas de tiempos activas en este momento.")
 
