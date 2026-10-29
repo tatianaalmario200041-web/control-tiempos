@@ -5,6 +5,8 @@ import time
 import os
 import json
 import pytz
+import uuid
+from streamlit_gsheets import GSheetsConnection
 
 # ============================================================
 # 1. CONFIGURACIÓN GENERAL E INDUSTRIAL
@@ -19,10 +21,9 @@ st.set_page_config(
 ZONA_BOGOTA = pytz.timezone("America/Bogota")
 PIN_EXPORTACION = "190520"
 
-ARCHIVOS_EXCEL = {
-    "Metalmecánica": "Registro_Produccion_Metalmecanica.xlsx",
-    "Maderas": "Registro_Produccion_Maderas.xlsx"
-}
+# Identificador único por pestaña del navegador para permitir multitrabajo simultáneo
+if "tab_id" not in st.session_state:
+    st.session_state["tab_id"] = str(uuid.uuid4())[:8]
 
 ARCHIVOS_OPERARIOS = {
     "Metalmecánica": "Lista_Operarios_Metalmecanica.json",
@@ -30,36 +31,22 @@ ARCHIVOS_OPERARIOS = {
 }
 
 COLUMNAS_REGISTRO = [
-    "Planta",
-    "Operario",
-    "Orden",
-    "Fecha",
-    "Turno",
-    "Máquina",
-    "Proyecto",
-    "Detalle Pieza",
-    "Material",
-    "Espesor/Calibre",
-    "Cantidad Lote",
-    "Piezas OK",
-    "Setup (min)",
-    "Tiempo Estándar (min)",
-    "Ciclo Real (min)",
-    "Espera Operario (min)",
-    "Paro Máquina (min)",
-    "Descargue (min)",
-    "Motivo Paro",
-    "Hora Inicio",
-    "Hora Fin"
+    "Planta", "Operario", "Orden", "Fecha", "Turno", "Máquina",
+    "Proyecto", "Detalle Pieza", "Material", "Espesor/Calibre",
+    "Cantidad Lote", "Piezas OK", "Setup (min)", "Tiempo Estándar (min)",
+    "Ciclo Real (min)", "Espera Operario (min)", "Paro Máquina (min)",
+    "Descargue (min)", "Motivo Paro", "Hora Inicio", "Hora Fin"
 ]
 
+COLUMNAS_BORRADOR = ["Tab_ID", "Planta", "Operario", "Maquina", "Orden", "Ultima_Actualizacion", "Estado_Json"]
+
 # ============================================================
-# 2. CONFIGURACIÓN DE PLANTAS Y PALETA DE COLORES TÉCNICA
+# 2. CONFIGURACIÓN DE PLANTAS
 # ============================================================
 
 CONFIG_PLANTAS = {
     "Metalmecánica": {
-        "color_primario": "#0284c7",      # Azul Cobalto Técnico
+        "color_primario": "#0284c7",
         "color_secundario": "#0369a1",
         "bg_badge": "#f0f9ff",
         "text_badge": "#0369a1",
@@ -76,46 +63,12 @@ CONFIG_PLANTAS = {
             "Soldadura LASER",
             "Otra Máquina"
         ],
-        "materiales": [
-            "CR (Cold Rolled)",
-            "HR (Hot Rolled)",
-            "Acero Inoxidable",
-            "Aluminio",
-            "Lámina Galvanizada",
-            "Otro Material"
-        ],
-        "calibres": [
-            "0.8 mm (C22)",
-            "0.9 mm (C20)",
-            "1.2 mm (C18)",
-            "1.5 mm (C16)",
-            "1.9 mm (C14)",
-            "2.5 mm (C12)",
-            '3.0 mm (1/8")',
-            '4.5 mm (3/16")',
-            '6.0 mm (1/4")',
-            "OTRO / LIBRE (Escribir en vivo)"
-        ],
-        "motivos_paro": [
-            "Falla mecánica",
-            "Falla eléctrica",
-            "Falla neumática",
-            "Falta de material",
-            "Falta de herramientas",
-            "Ajuste o calibración",
-            "Cambio de referencia",
-            "Mantenimiento",
-            "Falta de programación",
-            "Espera de calidad",
-            "Falta de operario",
-            "Pausa no programada",
-            "Sin energía",
-            "Otro motivo"
-        ]
+        "materiales": ["CR (Cold Rolled)", "HR (Hot Rolled)", "Acero Inoxidable", "Aluminio", "Lámina Galvanizada", "Otro Material"],
+        "calibres": ["0.8 mm (C22)", "0.9 mm (C20)", "1.2 mm (C18)", "1.5 mm (C16)", "1.9 mm (C14)", "2.5 mm (C12)", '3.0 mm (1/8")', '4.5 mm (3/16")', '6.0 mm (1/4")', "OTRO / LIBRE (Escribir en vivo)"],
+        "motivos_paro": ["Falla mecánica", "Falla eléctrica", "Falla neumática", "Falta de material", "Falta de herramientas", "Ajuste o calibración", "Cambio de referencia", "Mantenimiento", "Falta de programación", "Espera de calidad", "Falta de operario", "Pausa no programada", "Sin energía", "Otro motivo"]
     },
-
     "Maderas": {
-        "color_primario": "#ea580c",      # Naranja Óxido Técnico
+        "color_primario": "#ea580c",
         "color_secundario": "#c2410c",
         "bg_badge": "#fff7ed",
         "text_badge": "#c2410c",
@@ -134,44 +87,12 @@ CONFIG_PLANTAS = {
             "Taladro de Árbol KTC-18FC",
             "Otra Máquina Maderas"
         ],
-        "materiales": [
-            "Tablero MDF estándar (Crudo/Melamínico)",
-            "Tablero MDF Enchapado",
-            "Aglomerado MDP Melamínico",
-            "Madera Sólida (Pino / Teca)",
-            "Contrachapado / Triplex",
-            "Tablero OSB Estructural",
-            "Otro Material Maderas"
-        ],
-        "calibres": [
-            "14 mm",
-            "18 mm",
-            "25 mm",
-            "30 mm",
-            "40 mm",
-            "50 mm",
-            "OTRO / LIBRE (Escribir en vivo)"
-        ],
-        "motivos_paro": [
-            "Falla mecánica",
-            "Falla eléctrica",
-            "Falla hidráulica",
-            "Falta de tablero o madera",
-            "Falta de herramientas",
-            "Cambio de referencia",
-            "Ajuste de máquina",
-            "Cambio de cuchilla o herramienta",
-            "Mantenimiento",
-            "Espera de calidad",
-            "Falta de operario",
-            "Falta de programación",
-            "Falta de adhesivo o insumo",
-            "Otro motivo"
-        ]
+        "materiales": ["Tablero MDF estándar (Crudo/Melamínico)", "Tablero MDF Enchapado", "Aglomerado MDP Melamínico", "Madera Sólida (Pino / Teca)", "Contrachapado / Triplex", "Tablero OSB Estructural", "Otro Material Maderas"],
+        "calibres": ["14 mm", "18 mm", "25 mm", "30 mm", "40 mm", "50 mm", "OTRO / LIBRE (Escribir en vivo)"],
+        "motivos_paro": ["Falla mecánica", "Falla eléctrica", "Falla hidráulica", "Falta de tablero o madera", "Falta de herramientas", "Cambio de referencia", "Ajuste de máquina", "Cambio de cuchilla o herramienta", "Mantenimiento", "Espera de calidad", "Falta de operario", "Falta de programación", "Falta de adhesivo o insumo", "Otro motivo"]
     }
 }
 
-# Inicialización segura de la planta actual para los estilos dinámicos
 if "planta_actual" not in st.session_state:
     st.session_state["planta_actual"] = "Metalmecánica"
 
@@ -186,33 +107,17 @@ BG_TIMER_ACT = CFG["bg_timer_active"]
 BORDER_ACT = CFG["border_active"]
 
 # ============================================================
-# 3. ESTILOS CSS DE NIVEL INGENIERÍA INDUSTRIAL AVANZADA
+# 3. ESTILOS CSS
 # ============================================================
 
 st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-html, body, [class*="css"] {{
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    color: #1e293b;
-}}
+html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; }}
+.stApp {{ background: #f8fafc; }}
+.block-container {{ padding-top: 1.2rem; padding-bottom: 2rem; max-width: 1600px; }}
 
-.stApp {{
-    background: #f8fafc;
-}}
-
-[data-testid="stHeader"] {{
-    background: rgba(248, 250, 252, 0.95);
-}}
-
-.block-container {{
-    padding-top: 1.2rem;
-    padding-bottom: 2rem;
-    max-width: 1600px;
-}}
-
-/* Encabezado Técnico Dinámico */
 .engineering-header {{
     background: #0f172a;
     border-left: 5px solid {COLOR_PRI};
@@ -226,7 +131,6 @@ html, body, [class*="css"] {{
 .engineering-title {{
     font-size: 20px;
     font-weight: 800;
-    letter-spacing: -0.3px;
     margin: 0;
     color: #ffffff;
     display: flex;
@@ -241,7 +145,6 @@ html, body, [class*="css"] {{
     border-radius: 4px;
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.5px;
     text-transform: uppercase;
 }}
 
@@ -251,10 +154,8 @@ html, body, [class*="css"] {{
     font-weight: 500;
     margin-top: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }}
 
-/* Títulos de Secciones Técnicas */
 .section-title-eng {{
     font-size: 13px;
     font-weight: 800;
@@ -264,143 +165,28 @@ html, body, [class*="css"] {{
     border-radius: 4px;
     margin: 16px 0 12px 0;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
     border-left: 3px solid {COLOR_PRI};
 }}
 
-/* Tarjetas de Métricas Ejecutivas */
-.metric-card-eng {{
-    background: white;
-    padding: 16px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}}
+.metric-card-eng {{ background: white; padding: 16px; border: 1px solid #cbd5e1; border-radius: 8px; }}
+.metric-label-eng {{ color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; }}
+.metric-value-eng {{ color: #0f172a; font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; margin-top: 6px; }}
 
-.metric-label-eng {{
-    color: #64748b;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}}
+.timer-card-eng {{ background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; }}
+.timer-card-eng-active {{ background: {BG_TIMER_ACT}; border: 2px solid {BORDER_ACT}; border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; }}
 
-.metric-value-eng {{
-    color: #0f172a;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 22px;
-    font-weight: 600;
-    margin-top: 6px;
-    letter-spacing: -0.5px;
-}}
+.timer-header-row {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }}
+.timer-name-eng {{ font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; }}
+.timer-status-idle {{ font-size: 9px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; }}
+.timer-status-active {{ font-size: 9px; font-weight: 800; color: #ffffff; background: {COLOR_PRI}; padding: 2px 8px; border-radius: 4px; }}
+.timer-digits-eng {{ font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 500; color: #0f172a; margin: 4px 0; }}
+.timer-desc-eng {{ font-size: 11px; color: #64748b; }}
 
-/* Tarjetas de Cronómetros de Alta Precisión Mejoradas */
-.timer-card-eng {{
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin-bottom: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    transition: all 0.2s ease;
-}}
-
-.timer-card-eng-active {{
-    background: {BG_TIMER_ACT};
-    border: 2px solid {BORDER_ACT};
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin-bottom: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}}
-
-.timer-header-row {{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-}}
-
-.timer-name-eng {{
-    font-size: 11px;
-    font-weight: 800;
-    color: #334155;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}}
-
-.timer-status-idle {{
-    font-size: 9px;
-    font-weight: 700;
-    color: #64748b;
-    background: #f1f5f9;
-    padding: 2px 8px;
-    border-radius: 4px;
-    text-transform: uppercase;
-}}
-
-.timer-status-active {{
-    font-size: 9px;
-    font-weight: 800;
-    color: #ffffff;
-    background: {COLOR_PRI};
-    padding: 2px 8px;
-    border-radius: 4px;
-    text-transform: uppercase;
-}}
-
-.timer-digits-eng {{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 32px;
-    font-weight: 500;
-    color: #0f172a;
-    letter-spacing: -0.5px;
-    line-height: 1.1;
-    margin: 4px 0;
-}}
-
-.timer-desc-eng {{
-    font-size: 11px;
-    color: #64748b;
-}}
-
-/* Forzar color exacto de la planta en los botones de Iniciar y de Acción Principal */
-div.stButton > button[kind="primary"] {{
-    background-color: {COLOR_PRI} !important;
-    border-color: {COLOR_PRI} !important;
-    color: #ffffff !important;
-}}
-
-div.stButton > button[kind="primary"]:hover {{
-    background-color: {COLOR_SEC} !important;
-    border-color: {COLOR_SEC} !important;
-    color: #ffffff !important;
-}}
-
-div.stButton > button {{
-    border-radius: 6px !important;
-    font-weight: 700 !important;
-    font-size: 11px !important;
-    letter-spacing: 0.3px !important;
-    text-transform: uppercase !important;
-    min-height: 38px !important;
-}}
-
-div[data-testid="stDownloadButton"] button {{
-    border-radius: 6px !important;
-    font-weight: 700 !important;
-    min-height: 40px !important;
-}}
-
-label {{
-    font-weight: 700 !important;
-    font-size: 12px !important;
-    color: #334155 !important;
-}}
-
-footer {{
-    visibility: hidden;
-}}
+div.stButton > button[kind="primary"] {{ background-color: {COLOR_PRI} !important; border-color: {COLOR_PRI} !important; color: #ffffff !important; }}
+div.stButton > button[kind="primary"]:hover {{ background-color: {COLOR_SEC} !important; border-color: {COLOR_SEC} !important; color: #ffffff !important; }}
+div.stButton > button {{ border-radius: 6px !important; font-weight: 700 !important; font-size: 11px !important; text-transform: uppercase !important; min-height: 38px !important; }}
+label {{ font-weight: 700 !important; font-size: 12px !important; color: #334155 !important; }}
+footer {{ visibility: hidden; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -411,14 +197,11 @@ footer {{
 def ahora_bogota():
     return datetime.datetime.now(ZONA_BOGOTA)
 
-
 def obtener_hora_bogota():
     return ahora_bogota().strftime("%H:%M:%S")
 
-
 def obtener_fecha_bogota():
     return ahora_bogota().date()
-
 
 def formatear_duracion(segundos):
     segundos = max(0, int(segundos))
@@ -426,49 +209,29 @@ def formatear_duracion(segundos):
     minutos, segundos = divmod(resto, 60)
     return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
 
-
 def minutos_desde_segundos(segundos):
     return round(max(0, segundos) / 60, 2)
-
 
 def inicializar_estado(clave, valor):
     if clave not in st.session_state:
         st.session_state[clave] = valor
 
-
 # ============================================================
-# 5. GESTIÓN DE CRONÓMETROS Y OPERARIOS
+# 5. CRONÓMETROS Y ESTADO DE SESIÓN
 # ============================================================
 
 CRONOMETROS = {
-    "setup": {
-        "nombre": "Setup / Alistamiento",
-        "descripcion": "Preparación inicial y puesta a punto de máquina"
-    },
-    "ciclo": {
-        "nombre": "Ciclo Real Operativo",
-        "descripcion": "Tiempo efectivo de procesamiento y fabricación"
-    },
-    "descargue": {
-        "nombre": "Descargue y Post-Corte",
-        "descripcion": "Retiro, evacuación y despacho de piezas"
-    },
-    "paros": {
-        "nombre": "Paro / Tiempo Muerto de Máquina",
-        "descripcion": "Detenciones imprevistas o mecánicas"
-    },
-    "espera": {
-        "nombre": "Operario en Espera",
-        "descripcion": "Tiempos ociosos o espera de insumos"
-    }
+    "setup": {"nombre": "Setup / Alistamiento", "descripcion": "Preparación inicial y puesta a punto de máquina"},
+    "ciclo": {"nombre": "Ciclo Real Operativo", "descripcion": "Tiempo efectivo de procesamiento y fabricación"},
+    "descargue": {"nombre": "Descargue y Post-Corte", "descripcion": "Retiro, evacuación y despacho de piezas"},
+    "paros": {"nombre": "Paro / Tiempo Muerto de Máquina", "descripcion": "Detenciones imprevistas o mecánicas"},
+    "espera": {"nombre": "Operario en Espera", "descripcion": "Tiempos ociosos o espera de insumos"}
 }
-
 
 def inicializar_cronometros():
     for clave in CRONOMETROS:
         inicializar_estado(f"{clave}_acumulado", 0.0)
         inicializar_estado(f"{clave}_inicio", None)
-
 
 def segundos_cronometro(clave):
     acumulado = float(st.session_state.get(f"{clave}_acumulado", 0.0))
@@ -477,19 +240,13 @@ def segundos_cronometro(clave):
         acumulado += time.time() - inicio
     return max(0.0, acumulado)
 
-
 def cronometros_activos_count():
-    return sum(
-        1 for clave in CRONOMETROS
-        if st.session_state.get(f"{clave}_inicio") is not None
-    )
-
+    return sum(1 for clave in CRONOMETROS if st.session_state.get(f"{clave}_inicio") is not None)
 
 def iniciar_cronometro(clave):
     st.session_state[f"{clave}_inicio"] = time.time()
     if not st.session_state.get("hora_inicio_registro"):
         st.session_state["hora_inicio_registro"] = obtener_hora_bogota()
-
 
 def pausar_cronometro(clave):
     inicio = st.session_state.get(f"{clave}_inicio")
@@ -497,17 +254,14 @@ def pausar_cronometro(clave):
         st.session_state[f"{clave}_acumulado"] += time.time() - inicio
         st.session_state[f"{clave}_inicio"] = None
 
-
 def reiniciar_cronometros():
     for clave in CRONOMETROS:
         st.session_state[f"{clave}_acumulado"] = 0.0
         st.session_state[f"{clave}_inicio"] = None
     st.session_state["hora_inicio_registro"] = None
 
-
 inicializar_cronometros()
 inicializar_estado("hora_inicio_registro", None)
-
 
 def cargar_operarios(planta):
     archivo = ARCHIVOS_OPERARIOS[planta]
@@ -522,53 +276,113 @@ def cargar_operarios(planta):
     except (json.JSONDecodeError, OSError):
         return []
 
-
 def guardar_operarios(planta, operarios):
     archivo = ARCHIVOS_OPERARIOS[planta]
     with open(archivo, "w", encoding="utf-8") as f:
         json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
-
 # ============================================================
-# 6. MANEJO DE ARCHIVOS EXCEL
+# 6. GESTIÓN DE GOOGLE SHEETS (HISTORIAL Y BORRADORES POR PESTAÑA)
 # ============================================================
 
 def leer_historial(planta):
-    archivo = ARCHIVOS_EXCEL[planta]
-    if not os.path.exists(archivo):
-        return pd.DataFrame(columns=COLUMNAS_REGISTRO)
     try:
-        df = pd.read_excel(archivo, engine="openpyxl")
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df = conn.read(worksheet=planta, ttl=0)
+        if df is None or df.empty:
+            return pd.DataFrame(columns=COLUMNAS_REGISTRO)
         for columna in COLUMNAS_REGISTRO:
             if columna not in df.columns:
                 df[columna] = None
         return df[COLUMNAS_REGISTRO]
     except Exception as e:
-        st.error(f"Error al leer el archivo de la planta. Detalle: {e}")
-        return None
-
+        st.error(f"Error al sincronizar historial ({planta}): {e}")
+        return pd.DataFrame(columns=COLUMNAS_REGISTRO)
 
 def guardar_registro(planta, registro):
-    archivo = ARCHIVOS_EXCEL[planta]
-    if os.path.exists(archivo):
-        try:
-            df_existente = pd.read_excel(archivo, engine="openpyxl")
-        except Exception as e:
-            raise RuntimeError(f"No se pudo leer el historial previo: {e}")
-        for columna in COLUMNAS_REGISTRO:
-            if columna not in df_existente.columns:
-                df_existente[columna] = None
-        df_existente = df_existente[COLUMNAS_REGISTRO]
-    else:
-        df_existente = pd.DataFrame(columns=COLUMNAS_REGISTRO)
+    try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_existente = conn.read(worksheet=planta, ttl=0)
+        if df_existente is None or df_existente.empty:
+            df_existente = pd.DataFrame(columns=COLUMNAS_REGISTRO)
+        else:
+            df_existente = df_existente.dropna(how="all")
+            for columna in COLUMNAS_REGISTRO:
+                if columna not in df_existente.columns:
+                    df_existente[columna] = None
+            df_existente = df_existente[COLUMNAS_REGISTRO]
 
-    nuevo = pd.DataFrame([registro], columns=COLUMNAS_REGISTRO)
-    resultado = pd.concat([df_existente, nuevo], ignore_index=True)
-    resultado.to_excel(archivo, index=False, engine="openpyxl")
+        nuevo = pd.DataFrame([registro], columns=COLUMNAS_REGISTRO)
+        resultado = pd.concat([df_existente, nuevo], ignore_index=True)
+        conn.update(worksheet=planta, data=resultado)
+    except Exception as e:
+        raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
 
+def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
+    tab_id = st.session_state["tab_id"]
+    try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_borr = conn.read(worksheet="Borradores_Activos", ttl=0)
+        if df_borr is None or df_borr.empty:
+            df_borr = pd.DataFrame(columns=COLUMNAS_BORRADOR)
+        else:
+            df_borr = df_borr.dropna(how="all")
+
+        # Aislar por Tab_ID para permitir múltiples pestañas simultáneas sin conflictos
+        df_borr = df_borr[df_borr["Tab_ID"] != tab_id]
+
+        nuevo_borr = {
+            "Tab_ID": tab_id,
+            "Planta": planta,
+            "Operario": operario if operario else "Sin seleccionar",
+            "Maquina": maquina,
+            "Orden": orden if orden else "Sin OP",
+            "Ultima_Actualizacion": ahora_bogota().strftime("%Y-%m-%d %H:%M:%S"),
+            "Estado_Json": json.dumps(estado_dict)
+        }
+
+        df_final = pd.concat([df_borr, pd.DataFrame([nuevo_borr])], ignore_index=True)
+        conn.update(worksheet="Borradores_Activos", data=df_final)
+    except Exception as e:
+        pass
+
+def buscar_borrador_actual():
+    tab_id = st.session_state["tab_id"]
+    try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_borr = conn.read(worksheet="Borradores_Activos", ttl=0)
+        if df_borr is not None and not df_borr.empty:
+            df_m = df_borr[df_borr["Tab_ID"] == tab_id]
+            if not df_m.empty:
+                row = df_m.iloc[-1]
+                return row["Planta"], json.loads(row["Estado_Json"])
+    except Exception:
+        pass
+    return None, None
+
+def eliminar_borrador_actual():
+    tab_id = st.session_state["tab_id"]
+    try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_borr = conn.read(worksheet="Borradores_Activos", ttl=0)
+        if df_borr is not None and not df_borr.empty:
+            df_borr = df_borr[df_borr["Tab_ID"] != tab_id]
+            conn.update(worksheet="Borradores_Activos", data=df_borr)
+    except Exception:
+        pass
+
+def obtener_borradores_activos_global():
+    try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_borr = conn.read(worksheet="Borradores_Activos", ttl=0)
+        if df_borr is not None and not df_borr.empty:
+            return df_borr.dropna(how="all")
+    except Exception:
+        pass
+    return pd.DataFrame(columns=COLUMNAS_BORRADOR)
 
 # ============================================================
-# 7. CONFIGURACIÓN EN BARRA LATERAL
+# 7. BARRA LATERAL
 # ============================================================
 
 with st.sidebar:
@@ -596,9 +410,10 @@ with st.sidebar:
 
     st.caption(f"Planta: {planta}")
     st.caption(f"Fecha: {obtener_fecha_bogota().strftime('%Y-%m-%d')}")
+    st.caption(f"ID Pestaña: {st.session_state['tab_id']}")
 
 # ============================================================
-# 8. ENCABEZADO INDUSTRIAL PROFESIONAL
+# 8. ENCABEZADO
 # ============================================================
 
 st.markdown(
@@ -621,15 +436,40 @@ st.markdown(
 tab_registro, tab_historial, tab_admin = st.tabs([
     "Registro Operativo y Cronometraje",
     "Historial y Analítica de Ciclos",
-    "Administración y Base de Datos"
+    "Administración y Monitor en Vivo"
 ])
 
 # ============================================================
-# 10. PESTAÑA 1: REGISTRO Y CRONÓMETROS SIMULTÁNEOS
+# 10. PESTAÑA 1: REGISTRO CON RECUPERACIÓN AUTOMÁTICA TRAS RECARGA
 # ============================================================
 
 with tab_registro:
     operarios = cargar_operarios(planta)
+
+    # --- RESTAURACIÓN AUTOMÁTICA SI SE REFRESCÓ LA PÁGINA (F5) ---
+    if not st.session_state.get("verificado_recarga"):
+        p_borr, d_borr = buscar_borrador_actual()
+        if p_borr and d_borr:
+            st.session_state["borrador_pendiente"] = (p_borr, d_borr)
+        st.session_state["verificado_recarga"] = True
+
+    if st.session_state.get("borrador_pendiente"):
+        p_pen, d_pen = st.session_state["borrador_pendiente"]
+        st.warning(f"⚠️ Se detectó una toma activa previa en esta pestaña (Planta: {p_pen} | Operario: {d_pen.get('operario')} | OP: {d_pen.get('orden')}). ¿Deseas retomarla?")
+        c_r1, c_r2 = st.columns(2)
+        with c_r1:
+            if st.button("🔄 Sí, Retomar Toma Anterior", type="primary", use_container_width=True):
+                for clv in CRONOMETROS:
+                    st.session_state[f"{clv}_acumulado"] = float(d_pen.get("tiempos", {}).get(clv, 0.0))
+                st.session_state["hora_inicio_registro"] = d_pen.get("hora_inicio")
+                st.session_state["borrador_pendiente"] = None
+                st.success("¡Toma recuperada con éxito!")
+                st.rerun()
+        with c_r2:
+            if st.button("🗑️ No, Iniciar Nueva", use_container_width=True):
+                eliminar_borrador_actual()
+                st.session_state["borrador_pendiente"] = None
+                st.rerun()
 
     st.markdown('<div class="section-title-eng">1. Datos Generales de la Orden de Producción</div>', unsafe_allow_html=True)
 
@@ -692,7 +532,6 @@ with tab_registro:
         tiempo_estandar = st.number_input("Tiempo Estándar Unitario (min)", min_value=0.0, value=0.0, step=0.1, format="%.2f", key=f"t_std_{planta}")
 
     st.markdown('<div class="section-title-eng">2. Cronómetros Múltiples (Funcionamiento Simultáneo e Independiente)</div>', unsafe_allow_html=True)
-    st.caption("Puede iniciar varios cronómetros a la vez (por ejemplo, registrar paros en paralelo o solapamiento de tiempos) o gestionarlos de forma independiente.")
 
     claves_cronometros = list(CRONOMETROS.keys())
 
@@ -731,10 +570,25 @@ with tab_registro:
                     if not activo:
                         if st.button("Iniciar", key=f"iniciar_{clave}_{planta}", use_container_width=True, type="primary"):
                             iniciar_cronometro(clave)
+                            # Guardado en tiempo real del borrador para blindaje contra F5
+                            tiempos_actuales = {c: segundos_cronometro(c) for c in CRONOMETROS}
+                            guardar_borrador_en_vivo(planta, operario, maquina, orden, {
+                                "tiempos": tiempos_actuales,
+                                "hora_inicio": st.session_state.get("hora_inicio_registro"),
+                                "orden": orden,
+                                "operario": operario
+                            })
                             st.rerun()
                     else:
                         if st.button("Pausar", key=f"pausar_{clave}_{planta}", use_container_width=True):
                             pausar_cronometro(clave)
+                            tiempos_actuales = {c: segundos_cronometro(c) for c in CRONOMETROS}
+                            guardar_borrador_en_vivo(planta, operario, maquina, orden, {
+                                "tiempos": tiempos_actuales,
+                                "hora_inicio": st.session_state.get("hora_inicio_registro"),
+                                "orden": orden,
+                                "operario": operario
+                            })
                             st.rerun()
                 with b_col2:
                     if st.button("Reiniciar", key=f"reset_{clave}_{planta}", use_container_width=True):
@@ -797,12 +651,13 @@ with tab_registro:
 
     col_btn_save, col_btn_clear = st.columns([2, 1])
     with col_btn_save:
-        guardar_btn = st.button("Guardar Registro en Base de Datos", type="primary", use_container_width=True, key=f"save_db_{planta}")
+        guardar_btn = st.button("Guardar Registro Definitivo en Base de Datos", type="primary", use_container_width=True, key=f"save_db_{planta}")
     with col_btn_clear:
         limpiar_btn = st.button("Reiniciar Todo", use_container_width=True, key=f"clear_all_{planta}")
 
     if limpiar_btn:
         reiniciar_cronometros()
+        eliminar_borrador_actual()
         st.rerun()
 
     if guardar_btn:
@@ -856,19 +711,20 @@ with tab_registro:
 
             try:
                 guardar_registro(planta, registro_data)
-                st.success(f"Registro almacenado con éxito en {ARCHIVOS_EXCEL[planta]}.")
+                eliminar_borrador_actual() # Limpia el borrador al finalizar el registro
+                st.success(f"Registro final guardado con éxito en Google Sheets ({planta}).")
                 reiniciar_cronometros()
                 st.rerun()
             except Exception as ex:
                 st.error(f"Error al guardar los datos: {ex}")
 
 # ============================================================
-# 11. PESTAÑA 2: HISTORIAL Y ANALÍTICA
+# 11. PESTAÑA 2: HISTORIAL
 # ============================================================
 
 with tab_historial:
     st.markdown('<div class="section-title-eng">Historial y Consultas de Producción</div>', unsafe_allow_html=True)
-    st.caption(f"Fuente de datos activa: {ARCHIVOS_EXCEL[planta]}")
+    st.caption(f"Visualizando registros almacenados en Google Sheets ({planta})")
 
     df_hist = leer_historial(planta)
 
@@ -904,39 +760,42 @@ with tab_historial:
             ch3.metric("Suma Paros de Máquina", f"{tot_paros_val:.2f} min")
 
             st.dataframe(df_view, use_container_width=True, hide_index=True)
-            st.info("Nota: La exportación y descarga masiva de datos está restringida al panel de Administración protegido por PIN.")
 
 # ============================================================
-# 12. PESTAÑA 3: ADMINISTRACIÓN Y SEGURIDAD
+# 12. PESTAÑA 3: ADMINISTRACIÓN Y MONITOR EN VIVO
 # ============================================================
 
 with tab_admin:
-    st.markdown('<div class="section-title-eng">Panel de Administración de Base de Datos</div>', unsafe_allow_html=True)
-    st.warning("Acceso restringido para supervisores y analistas de costos.")
+    st.markdown('<div class="section-title-eng">Panel de Administración y Monitor en Vivo de Estaciones</div>', unsafe_allow_html=True)
+    st.warning("Acceso exclusivo para la Administradora del Proceso (Tatiana).")
 
-    pin_code = st.text_input("Ingrese PIN de Seguridad Autorizado", type="password", key=f"pin_adm_{planta}")
+    pin_code = st.text_input("Ingrese PIN de Seguridad Autorizado", type="password", key="pin_adm_global")
 
     if pin_code == PIN_EXPORTACION:
         st.success("Acceso autorizado con éxito.")
-        if os.path.exists(ARCHIVOS_EXCEL[planta]):
-            with open(ARCHIVOS_EXCEL[planta], "rb") as bin_file:
-                st.download_button(
-                    label=f"Descargar Base de Datos Completa ({planta})",
-                    data=bin_file,
-                    file_name=ARCHIVOS_EXCEL[planta],
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
-                    type="primary"
-                )
+        st.markdown("---")
+        st.markdown("### 🟢 Monitor de Estaciones en Tiempo Real (Quién está operando en este momento)")
 
-            if st.button("Eliminar / Reiniciar Historial de Planta", type="secondary", use_container_width=True):
-                try:
-                    os.remove(ARCHIVOS_EXCEL[planta])
-                    st.success("Base de datos reiniciada correctamente.")
-                    st.rerun()
-                except Exception as exc:
-                    st.error(f"No se pudo eliminar el archivo: {exc}")
+        df_activos = obtener_borradores_activos_global()
+
+        if not df_activos.empty:
+            df_mostrar_activos = df_activos[["Planta", "Operario", "Maquina", "Orden", "Ultima_Actualizacion"]].copy()
+            df_mostrar_activos.columns = ["Planta", "Operario Activo", "Máquina / Estación", "Orden (OP)", "Última Actividad"]
+            st.dataframe(df_mostrar_activos, use_container_width=True, hide_index=True)
+            st.caption("ℹ️ Aquí puedes ver exactamente qué operarios tienen pestañas abiertas tomando tiempos o con registros en curso en este preciso instante.")
         else:
-            st.info("No existe un archivo físico de base de datos para esta planta.")
+            st.info("No hay estaciones con tomas de tiempos activas en este momento.")
+
+        st.markdown("---")
+        st.markdown("### Resumen General de Registros en la Nube")
+        col_m, col_w = st.columns(2)
+        df_adm_m = leer_historial("Metalmecánica")
+        df_adm_w = leer_historial("Maderas")
+
+        with col_m:
+            st.metric("Total Registros Finales (Metalmecánica)", len(df_adm_m) if df_adm_m is not None else 0)
+        with col_w:
+            st.metric("Total Registros Finales (Maderas)", len(df_adm_w) if df_adm_w is not None else 0)
+
     elif pin_code != "":
         st.error("PIN incorrecto.")
