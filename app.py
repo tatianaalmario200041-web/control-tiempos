@@ -21,7 +21,6 @@ st.set_page_config(
 ZONA_BOGOTA = pytz.timezone("America/Bogota")
 PIN_EXPORTACION = "190520"
 
-# Identificador único por pestaña del navegador para permitir multitrabajo simultáneo
 if "tab_id" not in st.session_state:
     st.session_state["tab_id"] = str(uuid.uuid4())[:8]
 
@@ -175,7 +174,7 @@ html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; colo
 .timer-card-eng {{ background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; }}
 .timer-card-eng-active {{ background: {BG_TIMER_ACT}; border: 2px solid {BORDER_ACT}; border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; }}
 
-.timer-header-row {{ display: flex; justifyContent: space-between; align-items: center; margin-bottom: 6px; }}
+.timer-header-row {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }}
 .timer-name-eng {{ font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; }}
 .timer-status-idle {{ font-size: 9px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; }}
 .timer-status-active {{ font-size: 9px; font-weight: 800; color: #ffffff; background: {COLOR_PRI}; padding: 2px 8px; border-radius: 4px; }}
@@ -282,13 +281,15 @@ def guardar_operarios(planta, operarios):
         json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
 # ============================================================
-# 6. GESTIÓN DE GOOGLE SHEETS (HISTORIAL Y BORRADORES POR PESTAÑA)
+# 6. GESTIÓN DE GOOGLE SHEETS (CON CODIFICACIÓN SEGURA UTF-8)
 # ============================================================
 
 def leer_historial(planta):
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        df = conn.read(worksheet=planta, ttl=0)
+        # Forzar conversión UTF-8 segura en el nombre de la hoja
+        hoja_segura = str(planta).encode("utf-8").decode("utf-8")
+        df = conn.read(worksheet=hoja_segura, ttl=0)
         if df is None or df.empty:
             return pd.DataFrame(columns=COLUMNAS_REGISTRO)
         for columna in COLUMNAS_REGISTRO:
@@ -302,7 +303,8 @@ def leer_historial(planta):
 def guardar_registro(planta, registro):
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        df_existente = conn.read(worksheet=planta, ttl=0)
+        hoja_segura = str(planta).encode("utf-8").decode("utf-8")
+        df_existente = conn.read(worksheet=hoja_segura, ttl=0)
         if df_existente is None or df_existente.empty:
             df_existente = pd.DataFrame(columns=COLUMNAS_REGISTRO)
         else:
@@ -314,7 +316,7 @@ def guardar_registro(planta, registro):
 
         nuevo = pd.DataFrame([registro], columns=COLUMNAS_REGISTRO)
         resultado = pd.concat([df_existente, nuevo], ignore_index=True)
-        conn.update(worksheet=planta, data=resultado)
+        conn.update(worksheet=hoja_segura, data=resultado)
     except Exception as e:
         raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
 
@@ -332,12 +334,12 @@ def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
 
         nuevo_borr = {
             "Tab_ID": tab_id,
-            "Planta": planta,
-            "Operario": operario if operario else "Sin seleccionar",
-            "Maquina": maquina,
-            "Orden": orden if orden else "Sin OP",
+            "Planta": str(planta),
+            "Operario": str(operario) if operario else "Sin seleccionar",
+            "Maquina": str(maquina),
+            "Orden": str(orden) if orden else "Sin OP",
             "Ultima_Actualizacion": ahora_bogota().strftime("%Y-%m-%d %H:%M:%S"),
-            "Estado_Json": json.dumps(estado_dict)
+            "Estado_Json": json.dumps(estado_dict, ensure_ascii=False)
         }
 
         df_final = pd.concat([df_borr, pd.DataFrame([nuevo_borr])], ignore_index=True)
