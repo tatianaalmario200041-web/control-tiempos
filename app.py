@@ -6,7 +6,8 @@ import os
 import json
 import pytz
 import uuid
-from streamlit_gsheets import GSheetsConnection
+import gspread
+from google.oauth2.service_account import Credentials
 
 # ============================================================
 # 1. CONFIGURACIÓN GENERAL E INDUSTRIAL
@@ -281,15 +282,35 @@ def guardar_operarios(planta, operarios):
         json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
 # ============================================================
-# 6. GESTIÓN DE GOOGLE SHEETS
+# 6. GESTIÓN DE GOOGLE SHEETS (CONECTOR BLINDADO GSPREAD)
 # ============================================================
+
+def conectar_gsheets():
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds_dict = dict(st.secrets["connections"]["gsheets"]["credentials"])
+    
+    # REPARADOR AUTOMÁTICO DE SALTOS DE LÍNEA EN LA LLAVE PRIVADA
+    if "private_key" in creds_dict:
+        pk = creds_dict["private_key"]
+        if "\\n" in pk and "\n" not in pk:
+            creds_dict["private_key"] = pk.replace("\\n", "\n")
+
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    client = gspread.authorize(creds)
+    spreadsheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+    return client.open_by_url(spreadsheet_url)
 
 def leer_historial(planta):
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        df = conn.read(worksheet=planta, ttl=0)
-        if df is None or df.empty:
+        sh = conectar_gsheets()
+        worksheet = sh.worksheet(planta)
+        data = worksheet.get_all_records()
+        if not data:
             return pd.DataFrame(columns=COLUMNAS_REGISTRO)
+        df = pd.DataFrame(data)
         for columna in COLUMNAS_REGISTRO:
             if columna not in df.columns:
                 df[columna] = None
@@ -300,60 +321,57 @@ def leer_historial(planta):
 
 def guardar_registro(planta, registro):
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        df_existente = conn.read(worksheet=planta, ttl=0)
-        if df_existente is None or df_existente.empty:
-            df_existente = pd.DataFrame(columns=COLUMNAS_REGISTRO)
-        else:
-            df_existente = df_existente.dropna(how="all")
-            for columna in COLUMNAS_REGISTRO:
-                if columna not in df_existente.columns:
-                    df_existente[columna] = None
-            df_existente = df_existente[COLUMNAS_REGISTRO]
-
+        sh = conectar_gsheets()
+        worksheet = sh.worksheet(planta)
+        df_existente = leer_historial(planta)
         nuevo = pd.DataFrame([registro], columns=COLUMNAS_REGISTRO)
         resultado = pd.concat([df_existente, nuevo], ignore_index=True)
-        conn.update(worksheet=planta, data=resultado)
+        worksheet.clear()
+        worksheet.update([resultado.columns.values.tolist()] + resultado.values.tolist())
     except Exception as e:
         raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
 
 def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
     tab_id = st.session_state["tab_id"]
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        df_borr = conn.read(worksheet="Borradores_Activos", ttl=0)
-        if df_borr is None or df_borr.empty:
-            df_borr = pd.DataFrame(columns=COLUMNAS_BORRADOR)
+        sh = conectar_gsheets()
+        worksheet = sh.worksheet("Borradores_Activos")
+        data = worksheet.get_all_records()
+        df_borr = pd.DataFrame(data) if data else pd.DataFrame(columns=COLUMNAS_BORRADOR)
+        if not df_borr.empty and "Tab_ID" in df_borr.columns:
+            df_borr = df_borr[df_borr["Tab_ID"].astype(str) != tab_id]
         else:
-            df_borr = df_borr.dropna(how="all")
-
-        df_borr = df_borr[df_borr["Tab_ID"] != tab_id]
+            df_borr = pd.DataFrame(columns=COLUMNAS_BORRADOR)
 
         nuevo_borr = {
             "Tab_ID": tab_id,
-            "Planta": planta,
-            "Operario": operario if operario else "Sin seleccionar",
-            "Maquina": maquina,
-            "Orden": orden if orden else "Sin OP",
+            "Planta": str(planta),
+            "Operario": str(operario) if operario else "Sin seleccionar",
+            "Maquina": str(maquina),
+            "Orden": str(orden) if orden else "Sin OP",
             "Ultima_Actualizacion": ahora_bogota().strftime("%Y-%m-%d %H:%M:%S"),
             "Estado_Json": json.dumps(estado_dict, ensure_ascii=False)
         }
 
         df_final = pd.concat([df_borr, pd.DataFrame([nuevo_borr])], ignore_index=True)
-        conn.update(worksheet="Borradores_Activos", data=df_final)
+        worksheet.clear()
+        worksheet.update([df_final.columns.values.tolist()] + df_final.values.tolist())
     except Exception as e:
         pass
 
 def buscar_borrador_actual():
     tab_id = st.session_state["tab_id"]
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        df_borr = conn.read(worksheet="Borradores_Activos", ttl=0)
-        if df_borr is not None and not df_borr.empty:
-            df_m = df_borr[df_borr["Tab_ID"] == tab_id]
-            if not df_m.empty:
-                row = df_m.iloc[-1]
-                return row["Planta"], json.loads(row["Estado_Json"])
+        sh = conectar_gsheets()
+        worksheet = sh.worksheet("Borradores_Activos")
+        data = worksheet.get_all_records()
+        if data:
+            df_borr = pd.DataFrame(data)
+            if not df_borr.empty and "Tab_ID" in df_borr.columns:
+                df_m = df_borr[df_borr["Tab_ID"].astype(str) == tab_id]
+                if not df_m.empty:
+                    row = df_m.iloc[-1]
+                    return row["Planta"], json.loads(row["Estado_Json"])
     except Exception:
         pass
     return None, None
@@ -361,20 +379,25 @@ def buscar_borrador_actual():
 def eliminar_borrador_actual():
     tab_id = st.session_state["tab_id"]
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        df_borr = conn.read(worksheet="Borradores_Activos", ttl=0)
-        if df_borr is not None and not df_borr.empty:
-            df_borr = df_borr[df_borr["Tab_ID"] != tab_id]
-            conn.update(worksheet="Borradores_Activos", data=df_borr)
+        sh = conectar_gsheets()
+        worksheet = sh.worksheet("Borradores_Activos")
+        data = worksheet.get_all_records()
+        if data:
+            df_borr = pd.DataFrame(data)
+            if not df_borr.empty and "Tab_ID" in df_borr.columns:
+                df_borr = df_borr[df_borr["Tab_ID"].astype(str) != tab_id]
+                worksheet.clear()
+                worksheet.update([df_borr.columns.values.tolist()] + df_borr.values.tolist())
     except Exception:
         pass
 
 def obtener_borradores_activos_global():
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        df_borr = conn.read(worksheet="Borradores_Activos", ttl=0)
-        if df_borr is not None and not df_borr.empty:
-            return df_borr.dropna(how="all")
+        sh = conectar_gsheets()
+        worksheet = sh.worksheet("Borradores_Activos")
+        data = worksheet.get_all_records()
+        if data:
+            return pd.DataFrame(data)
     except Exception:
         pass
     return pd.DataFrame(columns=COLUMNAS_BORRADOR)
