@@ -282,7 +282,7 @@ def guardar_operarios(planta, operarios):
         json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
 # ============================================================
-# 6. GESTIÓN DE GOOGLE SHEETS (CONECTOR BLINDADO GSPREAD)
+# 6. GESTIÓN DE GOOGLE SHEETS (CON CACHÉ ANTI-LÍMITE DE CUOTA)
 # ============================================================
 
 def conectar_gsheets():
@@ -291,8 +291,6 @@ def conectar_gsheets():
         "https://www.googleapis.com/auth/drive"
     ]
     creds_dict = dict(st.secrets["connections"]["gsheets"]["credentials"])
-    
-    # REPARADOR AUTOMÁTICO DE SALTOS DE LÍNEA EN LA LLAVE PRIVADA
     if "private_key" in creds_dict:
         pk = creds_dict["private_key"]
         if "\\n" in pk and "\n" not in pk:
@@ -303,7 +301,8 @@ def conectar_gsheets():
     spreadsheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
     return client.open_by_url(spreadsheet_url)
 
-def leer_historial(planta):
+@st.cache_data(ttl=30, show_spinner=False)
+def leer_historial_cached(planta):
     try:
         sh = conectar_gsheets()
         worksheet = sh.worksheet(planta)
@@ -316,8 +315,14 @@ def leer_historial(planta):
                 df[columna] = None
         return df[COLUMNAS_REGISTRO]
     except Exception as e:
-        st.error(f"Error al sincronizar historial ({planta}): {e}")
+        return f"ERROR: {e}"
+
+def leer_historial(planta):
+    res = leer_historial_cached(planta)
+    if isinstance(res, str) and res.startswith("ERROR"):
+        st.error(f"Error al sincronizar historial ({planta}): {res.replace('ERROR: ', '')}")
         return pd.DataFrame(columns=COLUMNAS_REGISTRO)
+    return res
 
 def guardar_registro(planta, registro):
     try:
@@ -328,17 +333,29 @@ def guardar_registro(planta, registro):
         resultado = pd.concat([df_existente, nuevo], ignore_index=True)
         worksheet.clear()
         worksheet.update([resultado.columns.values.tolist()] + resultado.values.tolist())
+        st.cache_data.clear() # Limpiar caché para refrescar datos nuevos
     except Exception as e:
         raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
+
+@st.cache_data(ttl=10, show_spinner=False)
+def obtener_borradores_cached():
+    try:
+        sh = conectar_gsheets()
+        worksheet = sh.worksheet("Borradores_Activos")
+        data = worksheet.get_all_records()
+        if data:
+            return pd.DataFrame(data)
+    except Exception:
+        pass
+    return pd.DataFrame(columns=COLUMNAS_BORRADOR)
 
 def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
     tab_id = st.session_state["tab_id"]
     try:
         sh = conectar_gsheets()
         worksheet = sh.worksheet("Borradores_Activos")
-        data = worksheet.get_all_records()
-        df_borr = pd.DataFrame(data) if data else pd.DataFrame(columns=COLUMNAS_BORRADOR)
-        if not df_borr.empty and "Tab_ID" in df_borr.columns:
+        df_borr = obtener_borradores_cached()
+        if df_borr is not None and not df_borr.empty and "Tab_ID" in df_borr.columns:
             df_borr = df_borr[df_borr["Tab_ID"].astype(str) != tab_id]
         else:
             df_borr = pd.DataFrame(columns=COLUMNAS_BORRADOR)
@@ -356,22 +373,19 @@ def guardar_borrador_en_vivo(planta, operario, maquina, orden, estado_dict):
         df_final = pd.concat([df_borr, pd.DataFrame([nuevo_borr])], ignore_index=True)
         worksheet.clear()
         worksheet.update([df_final.columns.values.tolist()] + df_final.values.tolist())
+        st.cache_data.clear()
     except Exception as e:
         pass
 
 def buscar_borrador_actual():
     tab_id = st.session_state["tab_id"]
     try:
-        sh = conectar_gsheets()
-        worksheet = sh.worksheet("Borradores_Activos")
-        data = worksheet.get_all_records()
-        if data:
-            df_borr = pd.DataFrame(data)
-            if not df_borr.empty and "Tab_ID" in df_borr.columns:
-                df_m = df_borr[df_borr["Tab_ID"].astype(str) == tab_id]
-                if not df_m.empty:
-                    row = df_m.iloc[-1]
-                    return row["Planta"], json.loads(row["Estado_Json"])
+        df_borr = obtener_borradores_cached()
+        if df_borr is not None and not df_borr.empty and "Tab_ID" in df_borr.columns:
+            df_m = df_borr[df_borr["Tab_ID"].astype(str) == tab_id]
+            if not df_m.empty:
+                row = df_m.iloc[-1]
+                return row["Planta"], json.loads(row["Estado_Json"])
     except Exception:
         pass
     return None, None
@@ -381,26 +395,17 @@ def eliminar_borrador_actual():
     try:
         sh = conectar_gsheets()
         worksheet = sh.worksheet("Borradores_Activos")
-        data = worksheet.get_all_records()
-        if data:
-            df_borr = pd.DataFrame(data)
-            if not df_borr.empty and "Tab_ID" in df_borr.columns:
-                df_borr = df_borr[df_borr["Tab_ID"].astype(str) != tab_id]
-                worksheet.clear()
-                worksheet.update([df_borr.columns.values.tolist()] + df_borr.values.tolist())
+        df_borr = obtener_borradores_cached()
+        if df_borr is not None and not df_borr.empty and "Tab_ID" in df_borr.columns:
+            df_borr = df_borr[df_borr["Tab_ID"].astype(str) != tab_id]
+            worksheet.clear()
+            worksheet.update([df_borr.columns.values.tolist()] + df_borr.values.tolist())
+            st.cache_data.clear()
     except Exception:
         pass
 
 def obtener_borradores_activos_global():
-    try:
-        sh = conectar_gsheets()
-        worksheet = sh.worksheet("Borradores_Activos")
-        data = worksheet.get_all_records()
-        if data:
-            return pd.DataFrame(data)
-    except Exception:
-        pass
-    return pd.DataFrame(columns=COLUMNAS_BORRADOR)
+    return obtener_borradores_cached()
 
 # ============================================================
 # 7. BARRA LATERAL
