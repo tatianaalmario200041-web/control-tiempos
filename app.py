@@ -282,7 +282,7 @@ def guardar_operarios(planta, operarios):
         json.dump(sorted(set(operarios)), f, ensure_ascii=False, indent=4)
 
 # ============================================================
-# 6. GESTIÓN DE GOOGLE SHEETS (CON CACHÉ ANTI-LÍMITE DE CUOTA)
+# 6. GESTIÓN DE GOOGLE SHEETS (CON CACHÉ AMPLIADA Y ANTI-429)
 # ============================================================
 
 def conectar_gsheets():
@@ -301,7 +301,7 @@ def conectar_gsheets():
     spreadsheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
     return client.open_by_url(spreadsheet_url)
 
-@st.cache_data(ttl=30, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)  # 5 minutos de caché para evitar cuotas agotadas (Error 429)
 def leer_historial_cached(planta):
     try:
         sh = conectar_gsheets()
@@ -320,7 +320,11 @@ def leer_historial_cached(planta):
 def leer_historial(planta):
     res = leer_historial_cached(planta)
     if isinstance(res, str) and res.startswith("ERROR"):
-        st.error(f"Error al sincronizar historial ({planta}): {res.replace('ERROR: ', '')}")
+        # Si Google bloquea temporalmente por cuota (429), devolvemos DataFrame vacío sin romper la app
+        if "429" in res or "RESOURCE_EXHAUSTED" in res:
+            st.warning("⚠️ Límite temporal de Google Sheets alcanzando. Usando modo seguro en pausa (tus datos locales están a salvo).")
+        else:
+            st.error(f"Error al sincronizar historial ({planta}): {res.replace('ERROR: ', '')}")
         return pd.DataFrame(columns=COLUMNAS_REGISTRO)
     return res
 
@@ -333,11 +337,11 @@ def guardar_registro(planta, registro):
         resultado = pd.concat([df_existente, nuevo], ignore_index=True)
         worksheet.clear()
         worksheet.update([resultado.columns.values.tolist()] + resultado.values.tolist())
-        st.cache_data.clear() # Limpiar caché para refrescar datos nuevos
+        st.cache_data.clear()
     except Exception as e:
         raise RuntimeError(f"Error al escribir registro en Google Sheets: {e}")
 
-@st.cache_data(ttl=10, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def obtener_borradores_cached():
     try:
         sh = conectar_gsheets()
@@ -466,7 +470,7 @@ tab_registro, tab_historial, tab_admin = st.tabs([
 ])
 
 # ============================================================
-# 10. PESTAÑA 1: REGISTRO CON RECUPERACIÓN AUTOMÁTICA TRAS RECARGA
+# 10. PESTAÑA 1: REGISTRO CON RECUPERACIÓN AUTOMÁTICA DE DATOS
 # ============================================================
 
 with tab_registro:
@@ -480,18 +484,18 @@ with tab_registro:
 
     if st.session_state.get("borrador_pendiente"):
         p_pen, d_pen = st.session_state["borrador_pendiente"]
-        st.warning(f"⚠️ Se detectó una toma activa previa en esta pestaña (Planta: {p_pen} | Operario: {d_pen.get('operario')} | OP: {d_pen.get('orden')}). ¿Deseas retomarla?")
+        st.warning(f"⚠️ Se detectó una toma activa previa no guardada en esta pestaña (Planta: {p_pen} | Operario: {d_pen.get('operario')} | OP: {d_pen.get('orden')}). ¿Deseas recuperarla y continuar?")
         c_r1, c_r2 = st.columns(2)
         with c_r1:
-            if st.button("🔄 Sí, Retomar Toma Anterior", type="primary", use_container_width=True):
+            if st.button("🔄 Sí, Recuperar Datos Previos", type="primary", use_container_width=True):
                 for clv in CRONOMETROS:
                     st.session_state[f"{clv}_acumulado"] = float(d_pen.get("tiempos", {}).get(clv, 0.0))
                 st.session_state["hora_inicio_registro"] = d_pen.get("hora_inicio")
                 st.session_state["borrador_pendiente"] = None
-                st.success("¡Toma recuperada con éxito!")
+                st.success("¡Datos recuperados con éxito!")
                 st.rerun()
         with c_r2:
-            if st.button("🗑️ No, Iniciar Nueva", use_container_width=True):
+            if st.button("🗑️ No, Descartar e Iniciar Nueva", use_container_width=True):
                 eliminar_borrador_actual()
                 st.session_state["borrador_pendiente"] = None
                 st.rerun()
@@ -808,7 +812,7 @@ with tab_admin:
             st.dataframe(df_mostrar_activos, use_container_width=True, hide_index=True)
             st.caption("ℹ️ Aquí puedes ver exactamente qué operarios tienen pestañas abiertas tomando tiempos o con registros en curso en este preciso instante.")
         else:
-            st.info("No hay estaciones con tomas de tiempos activas en este momento.")
+            st.info("No hay estaciones con toma de tiempos activa en este momento.")
 
         st.markdown("---")
         st.markdown("### Resumen General de Registros en la Nube")
