@@ -470,7 +470,7 @@ tab_registro, tab_historial, tab_admin = st.tabs([
 ])
 
 # ============================================================
-# 10. PESTAÑA 1: REGISTRO CON SELECTOR DE BORRADORES
+# 10. PESTAÑA 1: REGISTRO CON RECUPERACIÓN COMPLETA DE CAMPOS Y CRONÓMETROS
 # ============================================================
 
 with tab_registro:
@@ -480,13 +480,11 @@ with tab_registro:
     with st.expander("📂 Cargar y continuar un borrador pendiente (Salvar tomas anteriores)", expanded=False):
         df_todos_borradores = obtener_borradores_cached()
         if df_todos_borradores is not None and not df_todos_borradores.empty:
-            # Filtrar borradores de la planta actual
             df_planta_borr = df_todos_borradores[df_todos_borradores["Planta"].astype(str) == planta]
             
             if not df_planta_borr.empty:
                 st.info(f"Se encontraron {len(df_planta_borr)} borrador(es) pendientes en {planta}.")
                 
-                # Crear opciones descriptivas para el selector
                 opciones_borr = []
                 mapa_borr = {}
                 for idx, row in df_planta_borr.iterrows():
@@ -500,12 +498,26 @@ with tab_registro:
                 with b_col_rec:
                     if st.button("🔄 Cargar para continuar", type="primary", use_container_width=True):
                         datos_b = mapa_borr[borrador_seleccionado]
+                        # Rellenar tiempos en session_state
                         st.session_state["setup_acumulado"] = float(datos_b.get("Setup (min)", 0.0)) * 60
                         st.session_state["ciclo_acumulado"] = float(datos_b.get("Ciclo Real (min)", 0.0)) * 60
                         st.session_state["descargue_acumulado"] = float(datos_b.get("Descargue (min)", 0.0)) * 60
                         st.session_state["paros_acumulado"] = float(datos_b.get("Paro Máquina (min)", 0.0)) * 60
                         st.session_state["espera_acumulado"] = float(datos_b.get("Espera Operario (min)", 0.0)) * 60
-                        st.success("¡Borrador cargado con éxito en los cronómetros!")
+                        
+                        # Rellenar campos de texto y selectores mediante session_state
+                        st.session_state[f"ord_{planta}"] = str(datos_b.get("Orden", ""))
+                        st.session_state[f"proy_{planta}"] = str(datos_b.get("Proyecto", ""))
+                        
+                        op_guardado = str(datos_b.get("Operario", ""))
+                        if op_guardado in operarios:
+                            st.session_state[f"op_sel_{planta}"] = op_guardado
+                            
+                        maq_guardada = str(datos_b.get("Máquina", ""))
+                        if maq_guardada in config["maquinas"]:
+                            st.session_state[f"maq_{planta}"] = maq_guardada
+
+                        st.success("¡Borrador y campos cargados con éxito!")
                         st.rerun()
                 with b_col_salv:
                     if st.button("💾 Salvar y enviar definitivo", use_container_width=True):
